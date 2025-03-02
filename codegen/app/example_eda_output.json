@@ -1,0 +1,146 @@
+{
+  "column_types": {
+    "datetime": [
+      "order_date",
+      "delivery_date"
+    ],
+    "numeric": [
+      "order_id",
+      "customer_id",
+      "price",
+      "quantity",
+      "total_amount"
+    ],
+    "categorical_low_cardinality": [
+      "status",
+      "payment_method",
+      "shipping_type",
+      "product_category"
+    ],
+    "categorical_high_cardinality": [
+      "product_name",
+      "customer_email",
+      "shipping_address"
+    ]
+  },
+  "column_missingness": {
+    "order_id": 0.0,
+    "customer_id": 0.0,
+    "order_date": 0.0,
+    "delivery_date": 2.5,
+    "status": 0.0,
+    "price": 0.0,
+    "quantity": 0.0,
+    "total_amount": 0.0,
+    "payment_method": 1.2,
+    "shipping_type": 0.8,
+    "product_name": 0.0,
+    "product_category": 0.0,
+    "customer_email": 3.5,
+    "shipping_address": 1.5
+  },
+  "column_cardinality": {
+    "order_id": 10000,
+    "customer_id": 2500,
+    "order_date": 365,
+    "delivery_date": 358,
+    "status": 5,
+    "price": 150,
+    "quantity": 20,
+    "total_amount": 450,
+    "payment_method": 4,
+    "shipping_type": 3,
+    "product_name": 1200,
+    "product_category": 12,
+    "customer_email": 2500,
+    "shipping_address": 2800
+  },
+  "primary_key_candidates": [
+    "order_id"
+  ],
+  "outlier_report": {
+    "order_id": {
+      "outlier_count": 0,
+      "lower_bound": 0,
+      "upper_bound": 10000
+    },
+    "customer_id": {
+      "outlier_count": 12,
+      "lower_bound": 1000,
+      "upper_bound": 3500
+    },
+    "price": {
+      "outlier_count": 45,
+      "lower_bound": 9.99,
+      "upper_bound": 299.99
+    },
+    "quantity": {
+      "outlier_count": 25,
+      "lower_bound": 1,
+      "upper_bound": 10
+    },
+    "total_amount": {
+      "outlier_count": 52,
+      "lower_bound": 15.99,
+      "upper_bound": 599.99
+    }
+  },
+  "suggested_filters": [
+    "Category filter on 'status'",
+    "Category filter on 'payment_method'",
+    "Category filter on 'shipping_type'",
+    "Category filter on 'product_category'",
+    "Date filter on 'order_date'",
+    "Date filter on 'delivery_date'"
+  ],
+  "date_frequencies": {
+    "order_date": "D",
+    "delivery_date": "D"
+  },
+  "basic_distribution_summary": {
+    "order_id": {
+      "mean": 5000.5,
+      "median": 5000.0,
+      "min": 1,
+      "max": 10000,
+      "std_dev": 2886.75
+    },
+    "price": {
+      "mean": 89.99,
+      "median": 79.99,
+      "min": 9.99,
+      "max": 499.99,
+      "std_dev": 75.25
+    },
+    "quantity": {
+      "mean": 2.5,
+      "median": 2.0,
+      "min": 1,
+      "max": 15,
+      "std_dev": 1.8
+    },
+    "status": {
+      "top_values": {
+        "delivered": 7500,
+        "in_transit": 1500,
+        "processing": 500,
+        "cancelled": 300,
+        "returned": 200
+      }
+    },
+    "payment_method": {
+      "top_values": {
+        "credit_card": 6000,
+        "paypal": 2500,
+        "debit_card": 1200,
+        "bank_transfer": 300
+      }
+    }
+  },
+  "data_quality": {
+    "row_count": 10000,
+    "column_count": 14,
+    "missing_value_percentage": 1.35,
+    "duplicate_row_count": 0
+  }
+} 
