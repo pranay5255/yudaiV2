@@ -98,7 +98,7 @@ export default function Dashboard() {
     return {
       title: { text: 'Payment Methods Distribution' },
       tooltip: { trigger: 'item' },
-      legend: { orient: 'vertical', left: 'left' },
+      legend: { orient: 'vertical', right: 'right' },
       series: [{
         type: 'pie',
         radius: '50%',
@@ -129,7 +129,7 @@ export default function Dashboard() {
     return {
       title: { text: 'Order Status Breakdown' },
       tooltip: { trigger: 'item' },
-      legend: { orient: 'vertical', left: 'left' },
+      legend: { orient: 'vertical', left: 'right' },
       series: [{
         type: 'pie',
         radius: '50%',
