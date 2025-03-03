@@ -2,26 +2,51 @@
 
 ## Overview
 
-We've created a Summary Agent that generates dashboard configurations based on data analysis and user requirements. The agent:
+The repository implements an intelligent dashboard configuration system with multiple agents working together. The system:
 
-1. Analyzes a dataset using the `base_eda.py` module
-2. Takes a user's prompt describing their dashboard requirements
-3. Generates a prompt template for an LLM to create dashboard chart configurations
-4. Parses the LLM's response into a structured JSON format
+1. Analyzes datasets using the `base_eda.py` module for comprehensive data exploration
+2. Uses an Orchestrator Agent to understand user requirements through guided interaction
+3. Generates dashboard configurations through a Summary Agent
+4. Produces structured JSON output for chart configurations
 
-## Files Created
+## Core Components
 
-1. `summary_agent_prompt_template.py`: The main module that generates the prompt template and parses the LLM response
-2. `test_summary_agent.py`: A test script that demonstrates how to use the summary agent
-3. `README.md`: Documentation on how to use the summary agent
+1. **Base EDA Module** (`base_eda.py`):
+   - Performs data quality assessment
+   - Infers column types and relationships
+   - Detects outliers and patterns
+   - Generates distribution summaries
+   - Suggests relevant filters
+
+2. **Orchestrator Agent** (`prompt_template_orchestrator.py`):
+   - Guides user interaction through structured questions
+   - Focuses on understanding business goals
+   - Validates assumptions with users
+   - Ensures non-technical, friendly communication
+   - Uses first-principles thinking for requirement gathering
+
+3. **Summary Agent** (`summary_agent_prompt_template.py`):
+   - Generates LLM prompts for dashboard configuration
+   - Parses LLM responses into structured JSON
+   - Handles multiple response parsing strategies
+   - Provides example chart configurations
+   - Supports both raw data and pre-computed EDA results
+
+4. **Main Pipeline** (`main.py`):
+   - Orchestrates the entire workflow
+   - Processes data and generates EDA
+   - Creates orchestrator prompts
+   - Generates dashboard configurations
+   - Handles LLM response processing
 
 ## Key Features
 
-- **Data Analysis Integration**: Seamlessly integrates with the existing `base_eda.py` module to analyze datasets
-- **Fallback Mechanisms**: Handles cases where dependencies like pandas and numpy are not available
-- **Flexible Input**: Can process either raw data files or pre-computed EDA results in JSON format
-- **Robust Response Parsing**: Includes multiple strategies for extracting JSON from LLM responses
-- **Comprehensive Documentation**: Includes examples and explanations for all functions
+- **Comprehensive Data Analysis**: Seamlessly integrates with `base_eda.py` for thorough data exploration
+- **Intelligent Interaction**: Uses an Orchestrator Agent for user-friendly requirement gathering
+- **Flexible Input Processing**: Handles both raw data files and pre-computed EDA results
+- **Robust Response Handling**: Multiple strategies for parsing LLM responses
+- **Example-Driven Development**: Includes sample configurations and usage examples
+- **Modular Architecture**: Clear separation of concerns between components
 
 ## Usage Example
 
@@ -71,12 +96,16 @@ The output is a JSON object with chart configurations:
       "areaStyle": true,
       "tooltip": true
     }
-  },
-  "chart2": {
-    "chart_type": "Bar",
-    "description": "A bar chart showing sales by product category",
-    ...
-  },
-  ...
+  }
 }
 ``` 
+
+config = {
+    'methods': ['GET', 'POST'],
+    'file_path': "'data/sample.csv'",
+    'content_type': "'text/csv'",
+    'method_imports': 'import { headers } from "next/headers";',
+    'method_params': 'request: Request'
+}
+
+api_code = generate_api_route(config)
