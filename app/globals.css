@@ -22,3 +22,21 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.command-suggestions {
+  scrollbar-width: thin;
+  scrollbar-color: #4B5563 #1F2937;
+}
+
+.command-suggestions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.command-suggestions::-webkit-scrollbar-track {
+  background: #1F2937;
+}
+
+.command-suggestions::-webkit-scrollbar-thumb {
+  background-color: #4B5563;
+  border-radius: 4px;
+}
