@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { ChartCard } from '../components/ChartCard';
+import { ChartSelector } from '../components/ChartSelector';
 import { parse } from 'csv-parse/sync';
+import type { EChartsOption } from 'echarts';
 
 interface SampleData {
   order_id: string;
@@ -16,8 +18,22 @@ interface SampleData {
   payment_method: string;
 }
 
+type ChartType = {
+  id: string;
+  name: string;
+  type: 'line' | 'bar' | 'pie';
+};
+
+const AVAILABLE_CHARTS: ChartType[] = [
+  { id: 'salesTrends', name: 'Sales Trends', type: 'line' },
+  { id: 'productCategory', name: 'Product Categories', type: 'bar' },
+  { id: 'paymentMethods', name: 'Payment Methods', type: 'pie' },
+  { id: 'orderStatus', name: 'Order Status', type: 'pie' },
+];
+
 export default function Dashboard() {
   const [data, setData] = useState<SampleData[]>([]);
+  const [activeCharts, setActiveCharts] = useState<string[]>([]);
 
   useEffect(() => {
     // In a real application, you would fetch this data from an API
@@ -33,7 +49,7 @@ export default function Dashboard() {
   }, []);
 
   // Chart 1: Sales Trends Over Time
-  const getSalesTrendsOptions = () => {
+  const getSalesTrendsOptions = (): EChartsOption => {
     const chartData = data.map((item) => ({
       date: item.order_date,
       value: parseFloat(item.total_amount.toString()),
@@ -57,7 +73,7 @@ export default function Dashboard() {
   };
 
   // Chart 2: Sales by Product Category
-  const getProductCategoryOptions = () => {
+  const getProductCategoryOptions = (): EChartsOption => {
     const categoryData = data.reduce((acc, item) => {
       acc[item.product_category] = (acc[item.product_category] || 0) + parseFloat(item.total_amount.toString());
       return acc;
@@ -84,7 +100,7 @@ export default function Dashboard() {
   };
 
   // Chart 3: Payment Methods Distribution
-  const getPaymentMethodOptions = () => {
+  const getPaymentMethodOptions = (): EChartsOption => {
     const paymentData = data.reduce((acc, item) => {
       acc[item.payment_method] = (acc[item.payment_method] || 0) + 1;
       return acc;
@@ -115,7 +131,7 @@ export default function Dashboard() {
   };
 
   // Chart 4: Order Status Breakdown
-  const getOrderStatusOptions = () => {
+  const getOrderStatusOptions = (): EChartsOption => {
     const statusData = data.reduce((acc, item) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
       return acc;
@@ -145,22 +161,66 @@ export default function Dashboard() {
     };
   };
 
+  const handleAddChart = (chartId: string) => {
+    if (!activeCharts.includes(chartId)) {
+      setActiveCharts([...activeCharts, chartId]);
+    }
+  };
+
+  const handleRemoveChart = (chartId: string) => {
+    setActiveCharts(activeCharts.filter(id => id !== chartId));
+  };
+
+  const getChartOptions = (chartId: string) => {
+    switch (chartId) {
+      case 'salesTrends':
+        return {
+          title: 'Sales Trends Over Time',
+          options: getSalesTrendsOptions()
+        };
+      case 'productCategory':
+        return {
+          title: 'Sales by Product Category',
+          options: getProductCategoryOptions()
+        };
+      case 'paymentMethods':
+        return {
+          title: 'Payment Methods Distribution',
+          options: getPaymentMethodOptions()
+        };
+      case 'orderStatus':
+        return {
+          title: 'Order Status Breakdown',
+          options: getOrderStatusOptions()
+        };
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Sales Dashboard</h1>
+      
+      <ChartSelector 
+        availableCharts={AVAILABLE_CHARTS}
+        onAddChart={handleAddChart}
+      />
+      
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <ReactECharts option={getSalesTrendsOptions()} style={{ height: '400px' }} />
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <ReactECharts option={getProductCategoryOptions()} style={{ height: '400px' }} />
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <ReactECharts option={getPaymentMethodOptions()} style={{ height: '400px' }} />
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <ReactECharts option={getOrderStatusOptions()} style={{ height: '400px' }} />
-        </div>
+        {activeCharts.map((chartId) => {
+          const chartConfig = getChartOptions(chartId);
+          if (!chartConfig) return null;
+          
+          return (
+            <ChartCard
+              key={chartId}
+              title={chartConfig.title}
+              options={chartConfig.options}
+              onRemove={() => handleRemoveChart(chartId)}
+            />
+          );
+        })}
       </div>
     </div>
   );
