@@ -3,6 +3,9 @@ import numpy as np
 from typing import Dict, List, Union
 from collections import defaultdict
 import json
+import argparse
+import sys
+import os
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype, is_object_dtype
 
 class DataFrameJSONEncoder(json.JSONEncoder):
@@ -130,9 +133,13 @@ def assess_data_quality(df: pd.DataFrame) -> Dict[str, Union[int, float]]:
         "duplicate_row_count": df.duplicated().sum()
     }
 
-def process_file(file_path: str, output_file: str = None) -> Dict:
+def process_file(file_path: str) -> Dict:
     """ Full pipeline for non-NLP inference over a dataset. """
-    df = load_data(file_path)
+    try:
+        df = load_data(file_path)
+    except Exception as e:
+        print(f"Error loading file: {str(e)}", file=sys.stderr)
+        sys.exit(1)
 
     inferred_context = {
         "column_types": infer_column_types(df),
@@ -146,15 +153,30 @@ def process_file(file_path: str, output_file: str = None) -> Dict:
         "data_quality": assess_data_quality(df)
     }
 
-    if output_file:
-        with open(output_file, 'w') as f:
+    try:
+        # Create data/tmp directory if it doesn't exist
+        os.makedirs('./data/tmp', exist_ok=True)
+        output_path = os.path.join('data/tmp', os.path.basename(file_path).replace('.csv', '.json'))
+        with open(output_path, 'w') as f:
             json.dump(inferred_context, f, cls=DataFrameJSONEncoder, indent=2)
+    except Exception as e:
+        print(f"Error writing output file: {str(e)}", file=sys.stderr)
+        sys.exit(1)
 
     return inferred_context
 
-# Example Run
+def main():
+    parser = argparse.ArgumentParser(description='Process a CSV file for EDA.')
+    parser.add_argument('input_file', help='Path to the input CSV file')
+    
+    args = parser.parse_args()
+    
+    try:
+        context = process_file(args.input_file)
+        print(json.dumps(context, cls=DataFrameJSONEncoder, indent=2))
+    except Exception as e:
+        print(f"Error processing file: {str(e)}", file=sys.stderr)
+        sys.exit(1)
+
 if __name__ == "__main__":
-    file_path = "example_data.csv"
-    output_file = "eda_results.json"
-    context = process_file(file_path, output_file)
-    print(json.dumps(context, cls=DataFrameJSONEncoder, indent=2))
+    main()

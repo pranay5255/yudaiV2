@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "python3 codegen/app/base_eda.py",
+    "analyze:file": "python3 codegen/app/base_eda.py",
+    "clean:tmp": "rm -rf tmp/*"
   },
   "dependencies": {
     "@types/echarts": "^5.0.0",
