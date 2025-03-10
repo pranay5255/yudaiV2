@@ -1,111 +1,175 @@
-# Summary Agent Implementation
+# Dashboard Implementation Summary
 
 ## Overview
 
-The repository implements an intelligent dashboard configuration system with multiple agents working together. The system:
+The repository implements a modern, interactive dashboard system built with Next.js 13+ and ECharts. The system:
 
-1. Analyzes datasets using the `base_eda.py` module for comprehensive data exploration
-2. Uses an Orchestrator Agent to understand user requirements through guided interaction
-3. Generates dashboard configurations through a Summary Agent
-4. Produces structured JSON output for chart configurations
+1. Utilizes React Server Components with 'use client' directive
+2. Provides a flexible, component-based architecture for data visualization
+3. Supports dynamic chart addition and removal with state management
+4. Implements multiple chart types (line, bar, pie) with customized configurations
+5. Uses CSV data parsing for sample data visualization
+6. Features a responsive two-column grid layout with gap spacing
 
 ## Core Components
 
-1. **Base EDA Module** (`base_eda.py`):
-   - Performs data quality assessment
-   - Infers column types and relationships
-   - Detects outliers and patterns
-   - Generates distribution summaries
-   - Suggests relevant filters
+1. **Dashboard Page** (`app/test/page.tsx`):
+   - Implements main dashboard container with client-side functionality
+   - Manages chart state using React hooks (useState, useEffect)
+   - Handles dynamic chart addition/removal with deduplication
+   - Processes CSV data with type-safe interfaces
+   - Provides modular chart configuration logic
 
-2. **Orchestrator Agent** (`prompt_template_orchestrator.py`):
-   - Guides user interaction through structured questions
-   - Focuses on understanding business goals
-   - Validates assumptions with users
-   - Ensures non-technical, friendly communication
-   - Uses first-principles thinking for requirement gathering
+2. **Chart Components**:
+   - **ChartCard**: Wrapper component for individual charts with removal capability
+   - **ChartSelector**: UI component for adding new charts from available options
+   - Supports four predefined chart types:
+     - Line charts with area style for time series
+     - Bar charts for categorical data
+     - Pie charts with enhanced visual effects
+     - Status distribution charts with legends
 
-3. **Summary Agent** (`summary_agent_prompt_template.py`):
-   - Generates LLM prompts for dashboard configuration
-   - Parses LLM responses into structured JSON
-   - Handles multiple response parsing strategies
-   - Provides example chart configurations
-   - Supports both raw data and pre-computed EDA results
+3. **Data Structure**:
+   ```typescript
+   interface SampleData {
+     order_id: string;
+     customer_id: string;
+     order_date: string;
+     product_category: string;
+     price: number;
+     quantity: number;
+     total_amount: number;
+     status: string;
+     payment_method: string;
+   }
+   ```
 
-4. **Main Pipeline** (`main.py`):
-   - Orchestrates the entire workflow
-   - Processes data and generates EDA
-   - Creates orchestrator prompts
-   - Generates dashboard configurations
-   - Handles LLM response processing
+4. **Chart Configurations**:
+   ```typescript
+   type ChartType = {
+     id: string;
+     name: string;
+     type: 'line' | 'bar' | 'pie';
+   };
+   ```
 
-## Key Features
+## Available Charts
 
-- **Comprehensive Data Analysis**: Seamlessly integrates with `base_eda.py` for thorough data exploration
-- **Intelligent Interaction**: Uses an Orchestrator Agent for user-friendly requirement gathering
-- **Flexible Input Processing**: Handles both raw data files and pre-computed EDA results
-- **Robust Response Handling**: Multiple strategies for parsing LLM responses
-- **Example-Driven Development**: Includes sample configurations and usage examples
-- **Modular Architecture**: Clear separation of concerns between components
+1. **Sales Trends Chart**:
+   ```typescript
+   {
+     title: 'Sales Trends Over Time',
+     type: 'line',
+     features: [
+       'smooth animation',
+       'area style fill',
+       'axis tooltips',
+       'time series data'
+     ]
+   }
+   ```
 
-## Usage Example
+2. **Product Category Chart**:
+   ```typescript
+   {
+     title: 'Sales by Product Category',
+     type: 'bar',
+     features: [
+       'categorical x-axis',
+       'value-based y-axis',
+       'axis tooltips',
+       'aggregated sales data'
+     ]
+   }
+   ```
 
-```python
-from codegen.app.summary_agent_prompt_template import generate_chart_prompt_template, parse_llm_response
+3. **Payment Methods Chart**:
+   ```typescript
+   {
+     title: 'Payment Methods Distribution',
+     type: 'pie',
+     features: [
+       'vertical legend alignment',
+       'right-aligned legend',
+       'item tooltips',
+       'shadow effects on hover'
+     ]
+   }
+   ```
 
-# Path to your data file
-file_path = "your_data.csv"
+4. **Order Status Chart**:
+   ```typescript
+   {
+     title: 'Order Status Breakdown',
+     type: 'pie',
+     features: [
+       'vertical legend alignment',
+       'left-aligned legend',
+       'item tooltips',
+       'shadow effects on hover'
+     ]
+   }
+   ```
 
-# User's requirements
-user_prompt = """
-I need a dashboard to track our e-commerce sales performance. I want to see:
-1. Sales trends over time
-2. Performance by product category
-3. Payment method distribution
-"""
+## UI/UX Features
 
-# Generate the prompt template
-prompt = generate_chart_prompt_template(file_path, user_prompt)
+- **Layout**:
+  - Responsive two-column grid layout
+  - Consistent gap spacing (1rem)
+  - Clean padding system
+  - Bold headings with proper spacing
 
-# Send the prompt to an LLM (not included in this module)
-llm_response = your_llm_function(prompt)
+- **Interactivity**:
+  - Dynamic chart addition without duplicates
+  - One-click chart removal
+  - Interactive tooltips on all charts
+  - Smooth transitions and animations
 
-# Parse the LLM's response
-chart_config = parse_llm_response(llm_response)
+- **Data Visualization**:
+  - Type-safe data handling
+  - Automatic data aggregation
+  - Consistent tooltip behavior
+  - Enhanced visual effects on interaction
 
-# Use the chart configuration to build your dashboard
-print(chart_config)
+## Technical Implementation
+
+```typescript
+// Chart Management
+const [activeCharts, setActiveCharts] = useState<string[]>([]);
+const [data, setData] = useState<SampleData[]>([]);
+
+// Data Fetching
+useEffect(() => {
+  fetch('/api/sample-data')
+    .then((res) => res.text())
+    .then((csvData) => {
+      const parsedData = parse(csvData, {
+        columns: true,
+        skip_empty_lines: true,
+      });
+      setData(parsedData);
+    });
+}, []);
+
+// Chart Handling
+const handleAddChart = (chartId: string) => {
+  if (!activeCharts.includes(chartId)) {
+    setActiveCharts([...activeCharts, chartId]);
+  }
+};
+
+const handleRemoveChart = (chartId: string) => {
+  setActiveCharts(activeCharts.filter(id => id !== chartId));
+};
 ```
 
-## Output Format
+## Future Enhancements
 
-The output is a JSON object with chart configurations:
-
-```json
-{
-  "chart1": {
-    "chart_type": "Line",
-    "description": "A line chart showing sales trends over time",
-    "echart_data_format": "list of objects [{date: <order_date>, value: <total_amount>}]",
-    "chart_Xaxis": "order_date",
-    "chart_Yaxis": "total_amount",
-    "example_function": "function generateLineChartOptions(data, xKey, yKey, title) {...}",
-    "prompt_used": "Show sales trends over time",
-    "extra_options": {
-      "smooth": true,
-      "areaStyle": true,
-      "tooltip": true
-    }
-  }
-}
-``` 
-
-config = {
-    'methods': ['GET', 'POST'],
-    'file_path': "'data/sample.csv'",
-    'content_type': "'text/csv'",
-    'method_imports': 'import { headers } from "next/headers";',
-    'method_params': 'request: Request'
-}
-
-api_code = generate_api_route(config)
+1. Real-time data updates with WebSocket integration
+2. Customizable chart layouts and positioning
+3. Advanced filtering and data analysis tools
+4. Chart configuration persistence
+5. Export functionality for charts and data
+6. Additional chart types and visualizations
+7. Dark mode support
+8. Mobile-responsive optimizations
