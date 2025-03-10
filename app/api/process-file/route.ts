@@ -10,34 +10,33 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File;
-        let tempFilePath: string;
         
         if (!file) {
-            // Use sample data if no file uploaded
-            tempFilePath = join(process.cwd(), 'codegen', 'app', 'sample_data.csv');
-        } else {
-            // Create a temporary file path
-            const bytes = await file.arrayBuffer();
-            const buffer = Buffer.from(bytes);
+            return NextResponse.json(
+                { error: 'No file provided' },
+                { status: 400 }
+            );
+        }
+
+        // Save the uploaded file
+        const uploadPath = join(process.cwd(), 'data', 'uploads', file.name);
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(uploadPath, buffer);
+
+        try {
+            // Execute the Python script which will create output in data/tmp
+            const scriptPath = join(process.cwd(), 'codegen/app/base_eda.py');
+            const { stdout } = await execAsync(`python3 "${scriptPath}" "${uploadPath}"`);
             
-            // Save the file temporarily
-            tempFilePath = join(process.cwd(), 'tmp', file.name);
-            await writeFile(tempFilePath, buffer);
+            // base_eda.py outputs the results to stdout as JSON
+            const results = JSON.parse(stdout);
+
+            return NextResponse.json(results);
+            
+        } catch (error) {
+            throw error;
         }
-
-        // Execute the Python script
-        const scriptPath = join(process.cwd(), 'codegen/app/base_eda.py');
-        const command = `python3 "${scriptPath}" "${tempFilePath}"`;
-        
-        const { stdout } = await execAsync(command);
-        const results = JSON.parse(stdout);
-
-        // Clean up the temporary file if it was uploaded
-        if (file) {
-            await execAsync(`rm "${tempFilePath}"`);
-        }
-
-        return NextResponse.json(results);
         
     } catch (error) {
         console.error('Error processing file:', error);
