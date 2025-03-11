@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface SidebarProps {
   columnTypes: {
-    datetime: string[];
     numeric: string[];
     categorical_low_cardinality: string[];
     categorical_high_cardinality: string[];
@@ -16,6 +15,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
   columnMissingness,
   columnCardinality,
 }) => {
+  const [columnData, setColumnData] = useState<SidebarProps>({
+    columnTypes: {
+      numeric: [],
+      categorical_low_cardinality: [],
+      categorical_high_cardinality: []
+    },
+    columnMissingness: {},
+    columnCardinality: {}
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setColumnData({
+      columnTypes,
+      columnMissingness,
+      columnCardinality
+    });
+  }, [columnTypes, columnMissingness, columnCardinality]);
+
   const renderColumnGroup = (title: string, columns: string[]) => (
     <div className="mb-6">
       <h3 className="text-gray-400 text-sm font-semibold mb-2">{title}</h3>
@@ -27,10 +45,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="text-gray-300 group-hover:text-white">{col}</div>
             <div className="text-xs text-gray-500">
-              {columnMissingness[col] > 0 && (
-                <span className="mr-2">Missing: {columnMissingness[col].toFixed(1)}%</span>
+              {columnData.columnMissingness[col] > 0 && (
+                <span className="mr-2">
+                  Missing: {columnData.columnMissingness[col].toFixed(1)}%
+                </span>
               )}
-              <span>Unique: {columnCardinality[col]}</span>
+              {columnData.columnCardinality[col] && (
+                <span>Unique: {columnData.columnCardinality[col]}</span>
+              )}
             </div>
           </div>
         ))}
@@ -38,21 +60,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 
+  if (error) {
+    return (
+      <div className="w-64 bg-gray-800 border-r border-gray-700 p-4">
+        <div className="text-red-400">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
-      <h2 className="text-lg font-semibold text-white mb-6">Dataset Columns</h2>
+      <h2 className="text-lg font-semibold text-white mb-6">
+        Dataset Columns
+      </h2>
       
-      {columnTypes.datetime.length > 0 && 
-        renderColumnGroup('Time-based', columnTypes.datetime)}
       
-      {columnTypes.numeric.length > 0 && 
-        renderColumnGroup('Numeric', columnTypes.numeric)}
+      {columnData.columnTypes.numeric.length > 0 && 
+        renderColumnGroup('Numeric', columnData.columnTypes.numeric)}
       
-      {columnTypes.categorical_low_cardinality.length > 0 && 
-        renderColumnGroup('Categories', columnTypes.categorical_low_cardinality)}
+      {columnData.columnTypes.categorical_low_cardinality.length > 0 && 
+        renderColumnGroup('Categories', columnData.columnTypes.categorical_low_cardinality)}
       
-      {columnTypes.categorical_high_cardinality.length > 0 && 
-        renderColumnGroup('Text', columnTypes.categorical_high_cardinality)}
     </div>
   );
-}; 
+};
