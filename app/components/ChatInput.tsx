@@ -17,7 +17,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, disabled }) => {
       const rect = inputRef.current?.getBoundingClientRect();
       if (rect) {
         setSuggestionPosition({
-          top: rect.bottom + window.scrollY,
+          top: rect.top ,
           left: rect.left
         });
       }
@@ -70,11 +70,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, disabled }) => {
         </button>
       </form>
 
-      <CommandSuggestions
-        isVisible={showSuggestions}
-        position={suggestionPosition}
-        onSelect={handleCommandSelect}
-      />
+      {showSuggestions && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 z-40">
+          <CommandSuggestions
+            isVisible={showSuggestions}
+            position={suggestionPosition}
+            onSelect={handleCommandSelect}
+          />
+        </div>
+      )}
     </div>
   );
 }; 
