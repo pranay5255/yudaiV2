@@ -12,19 +12,16 @@ const commands = [
     description: 'Modify or create columns'
   },
   {
-    command: '/trend',
+    command: '/trend', 
     description: 'Analyze trends over time'
-    
   },
   {
     command: '/merge',
     description: 'Combine datasets'
-
   },
   {
     command: '/pivot',
     description: 'Reshape data'
-
   },
   {
     command: '/split',
@@ -45,25 +42,21 @@ export const CommandSuggestions: React.FC<CommandSuggestionsProps> = ({
 
   return (
     <div
-      className="absolute z-50 bg-gray-800 rounded-lg shadow-lg border border-gray-700 max-h-96 overflow-y-auto"
+      className="fixed z-50 bg-gray-800 rounded-lg shadow-lg border border-gray-700 max-h-96"
       style={{ top: position.top, left: position.left }}
     >
       {commands.map((cmd) => (
         <div
           key={cmd.command}
-          className="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
+          className="p-2 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
           onClick={() => onSelect(cmd.command)}
         >
-          <div className="flex items-start">
+          <div className="flex items-center">
             <span className="text-blue-400 font-mono">{cmd.command}</span>
-            <span className="p-3 ml-6 text-gray-400 text-sm">{cmd.description}</span>
-          </div>
-          <div className="mt-1 text-xs text-gray-500">
-            <ul className="list-disc list-inside">
-            </ul>
+            <span className="ml-4 text-gray-400 text-sm">{cmd.description}</span>
           </div>
         </div>
       ))}
     </div>
   );
-}; 
+};
