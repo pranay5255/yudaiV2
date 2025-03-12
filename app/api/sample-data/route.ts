@@ -6,6 +6,7 @@ export async function GET() {
   try {
     const filePath = path.join(process.cwd(), 'codegen', 'app', 'sample_data.csv');
     const fileContents = await fs.readFile(filePath, 'utf8');
+    console.log(fileContents);
     return new NextResponse(fileContents, {
       headers: {
         'Content-Type': 'text/csv',
