@@ -4,17 +4,35 @@ import os
 from app.summary_agent_prompt_template import generate_chart_prompt_template, parse_llm_response, generate_chart_prompt_from_json
 from app.base_eda import process_file
 from app.prompt_template_orchestrator import create_base_template
+from app.context_manager import ContextManager
+from datetime import datetime
 
-def process_data_and_generate_eda(file_path: str, output_json: str = None) -> Dict[str, Any]:
+def process_data_and_generate_eda(file_path: str, output_json: str = None, context_manager: ContextManager = None) -> Dict[str, Any]:
     """
     Process input data file and generate EDA results
     """
-    return process_file(file_path, output_json)
+    eda_results = process_file(file_path, output_json)
+    
+    # Update context with dataset metadata if context manager is provided
+    if context_manager:
+        metadata = {
+            "file_path": file_path,
+            "column_types": eda_results.get('column_types', {}),
+            "data_quality": eda_results.get('data_quality', {}),
+            "timestamp": datetime.now().isoformat()
+        }
+        context_manager.update_dataset_metadata(metadata)
+        context_manager.add_analysis_result(eda_results)
+    
+    return eda_results
 
-def generate_dashboard_prompt(file_path: str, user_prompt: str, use_existing_eda: bool = False, eda_json_path: str = None) -> str:
+def generate_dashboard_prompt(file_path: str, user_prompt: str, context_manager: ContextManager = None, use_existing_eda: bool = False, eda_json_path: str = None) -> str:
     """
     Generate a prompt for dashboard configuration based on data analysis and user requirements
     """
+    if context_manager:
+        context_manager.add_user_input(user_prompt)
+    
     if use_existing_eda and eda_json_path:
         return generate_chart_prompt_from_json(eda_json_path, user_prompt)
     else:
@@ -41,6 +59,9 @@ def main():
     """
     Main entrypoint for the dashboard configuration system
     """
+    # Initialize context manager
+    context_manager = ContextManager()
+    
     # Example usage
     sample_data_path = "sample_data.csv"
     
@@ -51,8 +72,12 @@ def main():
             f.write("1,101,2023-01-01,Electronics,199.99,1,199.99,delivered,credit_card\n")
             f.write("2,102,2023-01-02,Clothing,49.99,2,99.98,delivered,paypal\n")
     
-    # Step 1: Process data and generate EDA
-    eda_results = process_data_and_generate_eda(sample_data_path, "eda_output.json")
+    # Step 1: Process data and generate EDA with context
+    eda_results = process_data_and_generate_eda(
+        sample_data_path, 
+        "eda_output.json",
+        context_manager
+    )
     
     # Step 2: Create orchestrator prompt
     orchestrator_prompt = create_orchestrator_prompt(eda_results)
@@ -60,7 +85,7 @@ def main():
     print("-" * 80)
     print(orchestrator_prompt)
     
-    # Step 3: Example user prompt (in a real application, this would come from user input)
+    # Step 3: Example user prompt with context
     user_prompt = """
     I need a dashboard to track our e-commerce sales performance. I want to see:
     1. Sales trends over time
@@ -68,8 +93,12 @@ def main():
     3. Payment method distribution
     """
     
-    # Step 4: Generate dashboard configuration prompt
-    dashboard_prompt = generate_dashboard_prompt(sample_data_path, user_prompt)
+    # Step 4: Generate dashboard configuration prompt with context
+    dashboard_prompt = generate_dashboard_prompt(
+        sample_data_path, 
+        user_prompt,
+        context_manager
+    )
     print("\nDashboard Configuration Prompt:")
     print("-" * 80)
     print(dashboard_prompt)
@@ -88,6 +117,11 @@ def main():
     print("\nProcessed Chart Configuration:")
     print("-" * 80)
     print(json.dumps(chart_config, indent=2))
+
+    # Print final context for verification
+    print("\nFinal Context:")
+    print("-" * 80)
+    print(json.dumps(context_manager.get_context(), indent=2))
 
 if __name__ == "__main__":
     main()
