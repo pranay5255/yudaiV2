@@ -53,7 +53,7 @@ export const CommandSuggestions: React.FC<CommandSuggestionsProps> = ({
         >
           <div className="flex items-center">
             <span className="text-blue-400 font-mono">{cmd.command}</span>
-            <span className="ml-4 text-gray-400 text-sm">{cmd.description}</span>
+            <span className="p-3 ml-4 text-gray-400 text-sm">{cmd.description}</span>
           </div>
         </div>
       ))}
