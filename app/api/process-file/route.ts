@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { existsSync } from 'fs';
+import { DatasetProfile } from '../../../codegen/app/models';
 
 const execAsync = promisify(exec);
 
@@ -18,31 +20,66 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Ensure upload directories exist
+        const uploadDir = join(process.cwd(), 'codegen', 'app', 'uploads');
+        
+        if (!existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true });
+        }
+
         // Save the uploaded file
-        const uploadPath = join(process.cwd(), 'data', 'uploads', file.name);
+        const uploadPath = join(uploadDir, file.name);
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
         await writeFile(uploadPath, buffer);
 
         try {
-            // Execute the Python script which will create output in data/tmp
+            // Execute the Python profiling script
             const scriptPath = join(process.cwd(), 'codegen/app/base_eda.py');
-            const { stdout } = await execAsync(`python3 "${scriptPath}" "${uploadPath}"`);
+            const { stdout, stderr } = await execAsync(`pnpm exec python3 "${scriptPath}" "${uploadPath}"`);
             
-            // base_eda.py outputs the results to stdout as JSON
-            const results = JSON.parse(stdout);
+            if (stderr) {
+                console.error('Python script error:', stderr);
+                throw new Error(stderr);
+            }
 
-            return NextResponse.json(results);
+            // Get the profile JSON file path from Python output
+            const profilePath = stdout.trim();
+            
+            // Read and parse the profile JSON file
+            const profileContent = await readFile(profilePath, 'utf-8');
+            const profileData = JSON.parse(profileContent) as DatasetProfile;
+
+            // Validate the profile data structure
+            if (!profileData.analysis || !profileData.table || !profileData.variables) {
+                throw new Error('Invalid profile data structure');
+            }
+
+            return NextResponse.json({
+                success: true,
+                data: profileData
+            });
             
         } catch (error) {
-            throw error;
+            console.error('Error processing dataset:', error);
+            return NextResponse.json(
+                { error: 'Error processing dataset' },
+                { status: 500 }
+            );
         }
         
     } catch (error) {
-        console.error('Error processing file:', error);
+        console.error('Error handling file upload:', error);
         return NextResponse.json(
-            { error: 'Error processing file' },
+            { error: 'Error handling file upload' },
             { status: 500 }
         );
     }
+}
+
+export async function GET() {
+    return NextResponse.json(
+        { error: 'Method not allowed' },
+        { status: 405 }
+    );
 }
