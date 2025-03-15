@@ -36,15 +36,21 @@ export async function POST(request: NextRequest) {
         try {
             // Execute the Python profiling script
             const scriptPath = join(process.cwd(), 'codegen/app/base_eda.py');
+            console.log(scriptPath);
+            console.log(uploadPath);
+
             const { stdout, stderr } = await execAsync(`pnpm exec python3 "${scriptPath}" "${uploadPath}"`);
             
-            if (stderr) {
+            // Only throw if stderr contains actual error messages (not INFO logs)
+            if (stderr && !stderr.includes('INFO:')) {
                 console.error('Python script error:', stderr);
                 throw new Error(stderr);
             }
 
             // Get the profile JSON file path from Python output
-            const profilePath = stdout.trim();
+            const profilePath = stderr.includes('Profile saved to:') 
+                ? stderr.split('Profile saved to:')[1].trim()
+                : stdout.trim();
             
             // Read and parse the profile JSON file
             const profileContent = await readFile(profilePath, 'utf-8');
