@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 from pydantic import BaseModel
-from models import DatasetProfile
+from app.models import DatasetProfile
 
 class UserInput(BaseModel):
     timestamp: datetime
@@ -169,3 +169,37 @@ class ContextManager:
         validated_context = Context(**self.context)
         with open(self.context_file_path, 'w') as f:
             json.dump(validated_context.dict(), f, indent=2, default=str)
+
+    def add_mock_entries(self) -> None:
+        """Add mock user inputs and analysis results for testing"""
+        # Mock user inputs
+        self.add_user_input(
+            "I need a dashboard to track our e-commerce sales performance",
+            command="create_dashboard"
+        )
+        
+        self.add_user_input(
+            "Show me the sales trends over time and by product category",
+            command="analyze_sales"
+        )
+        
+        # Mock analysis results
+        self.add_analysis_result(
+            "sales_overview",
+            {
+                "total_sales": 150000,
+                "avg_order_value": 250,
+                "top_category": "Electronics"
+            },
+            command="sales_analysis"
+        )
+        
+        self.add_analysis_result(
+            "trend_analysis",
+            {
+                "growth_rate": "15%",
+                "peak_month": "December",
+                "trending_products": ["Laptops", "Smartphones"]
+            },
+            command="trend_analysis"
+        )
