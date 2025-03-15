@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from models import DatasetProfile
+from app.models import DatasetProfile
 from datetime import datetime
 
 def create_base_template() -> str:
