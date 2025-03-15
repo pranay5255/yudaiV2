@@ -1,181 +1,223 @@
 from typing import Dict, Any, List
 import json
-import os
-from .context_manager import ContextManager
+from app.models import DatasetProfile
+from .context_manager import Context, ContextManager
 
 def create_base_template() -> str:
-    """Returns the enhanced summary agent template"""
+    """Returns the enhanced summary agent template for ECharts configuration"""
     return '''
-    You are a Dashboard Configuration Agent responsible for generating comprehensive JSON configurations for interactive dashboards based on data analysis, historical context, and user requirements.
+    You are a Dashboard Configuration Agent responsible for generating comprehensive ECharts configurations for interactive dashboards based on data analysis, historical context, and user requirements.
 
-    Your task is to generate a detailed JSON configuration that defines multiple chart components for an interactive dashboard. Each chart definition must include:
+    Your task is to generate a detailed JSON configuration that defines 4 complementary chart components using ECharts. Each chart definition must include:
 
-    Required Properties:
-    - chart_id: Unique identifier for the chart
-    - chart_type: The visualization type (e.g., "Pie", "Bar", "Line", "Scatter", "Radar", "Table", "Heatmap")
-    - title: Clear, descriptive title for the chart
-    - description: Detailed explanation of what the chart displays and its insights
-    - data_requirements: {
-        - required_columns: List of data columns needed
-        - aggregations: Required data aggregations
-        - filters: Suggested data filters
-        - transformations: Any data transformations needed
-      }
-    - visual_config: {
-        - x_axis: Configuration for x-axis (name, type, format)
-        - y_axis: Configuration for y-axis (name, type, format)
-        - series: Series configuration including colors, styles
-        - tooltip: Tooltip configuration
-        - legend: Legend configuration
-      }
-    - interactions: {
-        - drill_down: Drill-down capabilities
-        - filters: Interactive filter options
-        - highlights: Highlight interactions
-      }
-    - api_requirements: {
-        - endpoint: Required API endpoint pattern
-        - parameters: Expected query parameters
-        - response_format: Expected response format
-      }
+    Required Properties for each chart:
+    {
+        "chart_id": "unique_identifier",
+        "chart_type": "One of: line, bar, pie, scatter, heatmap, radar, gauge, sunburst, tree, treemap, sankey, boxplot",
+        "title": {
+            "text": "Clear descriptive title",
+            "left": "center/left/right"
+        },
+        "tooltip": {
+            "trigger": "item/axis/none",
+            "formatter": "string or function template"
+        },
+        "legend": {
+            "data": ["series names"],
+            "type": "plain/scroll",
+            "orient": "horizontal/vertical",
+            "position": "top/bottom/right"
+        },
+        "dataset": {
+            "source": ["required_columns"],
+            "dimensions": ["dimension", "names"]
+        },
+        "xAxis": {
+            "type": "category/value/time",
+            "name": "x axis name"
+        },
+        "yAxis": {
+            "type": "value/category",
+            "name": "y axis name"
+        },
+        "series": [{
+            "type": "chart_type",
+            "name": "series name",
+            "encode": {
+                "x": "x dimension name/index",
+                "y": "y dimension name/index"
+            },
+            "emphasis": {
+                "focus": "self/series"
+            }
+        }],
+        "dataZoom": [{
+            "type": "slider/inside",
+            "orient": "horizontal/vertical"
+        }],
+        "toolbox": {
+            "feature": {
+                "dataZoom": {},
+                "brush": {},
+                "restore": {},
+                "saveAsImage": {}
+            }
+        },
+        "visualMap": {
+            "type": "continuous/piecewise",
+            "dimension": "dimension index"
+        }
+    }
 
-    Context Information:
-    
-    Dataset Analysis:
-    {data_quality_summary}
+    Dataset Profile:
+    {dataset_profile}
 
-    Column Information:
-    {column_type_summary}
+    User Requirements from Conversation:
+    {conversation_history}
 
-    Key Insights:
-    {data_insights}
+    Generate exactly 4 complementary charts that:
+    1. Address the user's specific requirements from the conversation
+    2. Highlight key insights from the dataset profile
+    3. Leverage ECharts' interactive features:
+       - Zooming and scrolling with dataZoom
+       - Rich tooltips with formatter
+       - Linked chart interactions with emphasis
+       - Visual mapping for data ranges
+    4. Follow ECharts visualization best practices:
+       - Responsive layouts
+       - Proper axis and legend placement
+       - Consistent color schemes
+       - Clear data labels and tooltips
 
-    Historical Context:
-    {historical_context}
-
-    User Requirements:
-    {user_prompt}
-
-    Suggested Interactions:
-    {filter_suggestions}
-
-    Generate a complete dashboard configuration with 3-5 complementary charts that:
-    1. Address the user's specific requirements
-    2. Highlight key insights from the data
-    3. Provide meaningful interactive capabilities
-    4. Enable data exploration through filters and drill-downs
-    5. Follow visualization best practices
-
-    Respond with a valid JSON configuration that can be directly used by the Dashboard and API components.
+    Respond with a valid ECharts configuration containing exactly 4 charts.
     '''
 
-def format_data_quality_summary(data_quality: Dict[str, Any]) -> str:
-    """Format the data quality information into a readable summary"""
-    return f"""- Dataset contains {data_quality['row_count']} rows and {data_quality['column_count']} columns
-- Overall data completeness: {100 - data_quality['missing_value_percentage']:.1f}%
-- Number of duplicate rows: {data_quality['duplicate_row_count']}"""
-
-def format_column_type_summary(column_types: Dict[str, list]) -> str:
-    """Format the column type information into a readable summary"""
-    summary = []
-    if column_types.get('datetime'):
-        summary.append(f"- Time-based columns: {', '.join(column_types['datetime'])}")
-    if column_types.get('numeric'):
-        summary.append(f"- Numeric columns: {', '.join(column_types['numeric'])}")
-    if column_types.get('categorical_low_cardinality'):
-        summary.append(f"- Category columns (few unique values): {', '.join(column_types['categorical_low_cardinality'])}")
-    if column_types.get('categorical_high_cardinality'):
-        summary.append(f"- Text columns (many unique values): {', '.join(column_types['categorical_high_cardinality'])}")
+def format_dataset_profile(profile: DatasetProfile) -> str:
+    """Format the dataset profile into a readable summary"""
+    if not profile:
+        return "No dataset profile available"
+        
+    # Handle case where profile might be a dict
+    if isinstance(profile, dict):
+        profile = DatasetProfile(**profile)
+        
+    summary = [
+        f"Dataset: {profile.analysis.title}",
+        f"Rows: {profile.table.n:,}",
+        f"Columns: {profile.table.n_var}",
+        f"Date Range: {profile.analysis.date_start} to {profile.analysis.date_end}",
+        f"Missing Data: {profile.table.p_cells_missing:.1%}",
+        f"Duplicate Rows: {profile.table.n_duplicates:,}",
+        "\nColumn Types:",
+    ]
+    
+    for type_name, count in profile.table.types.items():
+        summary.append(f"- {type_name}: {count}")
+    
+    summary.append("\nKey Variables:")
+    for var_name, var_info in profile.variables.items():
+        summary.append(f"- {var_name} ({var_info.type})")
+        if var_info.type == "Numeric":
+            summary.append(f"  Range: {var_info.range}")
+        elif var_info.type == "Categorical":
+            summary.append(f"  Unique Values: {var_info.n_unique}")
+    
     return "\n".join(summary)
 
-def format_data_insights(distribution_summary: Dict[str, Dict], outlier_report: Dict) -> str:
-    """Format the distribution and outlier information into readable insights"""
-    insights = []
-    for col, stats in distribution_summary.items():
-        if 'mean' in stats:  # Numeric column
-            insights.append(f"- {col}: Average {stats['mean']:.2f}, ranges from {stats['min']:.2f} to {stats['max']:.2f}")
-        elif 'top_values' in stats:  # Categorical column
-            top_vals = list(stats['top_values'].items())[:3]
-            insights.append(f"- {col}: Most common values are {', '.join(f'{val} ({count})' for val, count in top_vals)}")
-    
-    for col, stats in outlier_report.items():
-        if stats['outlier_count'] > 0:
-            insights.append(f"- {col}: Contains {stats['outlier_count']} outliers")
-    
-    return "\n".join(insights)
-
-def format_filter_suggestions(suggested_filters: list, date_frequencies: Dict[str, str]) -> str:
-    """Format the filter suggestions into a readable summary"""
-    suggestions = suggested_filters.copy()
-    for col, freq in date_frequencies.items():
-        if freq != "Irregular":
-            suggestions.append(f"Time-based analysis possible on '{col}' ({freq} frequency)")
-    return "\n".join(f"- {suggestion}" for suggestion in suggestions)
-
-def format_historical_context(context: Dict[str, Any]) -> str:
-    """Format historical context from previous analyses and user interactions"""
+def format_conversation_history(context: Context) -> str:
+    """Format the conversation history from context"""
+    # Handle case where context might be a dict
+    if isinstance(context, dict):
+        context = Context(**context)
+        
     history = []
     
-    # Add previous user inputs
-    if context.get('user_inputs'):
-        recent_inputs = context['user_inputs'][-3:]  # Get last 3 inputs
-        history.append("Recent User Queries:")
-        for input_entry in recent_inputs:
-            history.append(f"- {input_entry['input']} ({input_entry['timestamp']})")
+    # Add session info
+    if hasattr(context.session_info, 'created_at'):
+        history.append(f"Session Started: {context.session_info.created_at}")
+        history.append(f"Current Turn: {context.session_info.current_turn}\n")
     
-    # Add relevant previous analyses
-    if context.get('analysis_history'):
-        recent_analyses = context['analysis_history'][-2:]  # Get last 2 analyses
-        history.append("\nPrevious Analysis Insights:")
-        for analysis in recent_analyses:
-            if 'key_findings' in analysis['analysis']:
-                history.append(f"- {analysis['analysis']['key_findings']}")
+    # Format user inputs with timestamps
+    for input_entry in context.user_inputs:
+        # Handle both dict and UserInput objects
+        if isinstance(input_entry, dict):
+            timestamp = input_entry.get('timestamp', 'N/A')
+            input_text = input_entry.get('input', '')
+            command = input_entry.get('command', None)
+        else:
+            timestamp = input_entry.timestamp
+            input_text = input_entry.input
+            command = input_entry.command
+            
+        history.append(f"User Input ({timestamp}):")
+        history.append(f"  {input_text}")
+        if command:
+            history.append(f"  Command: {command}")
+    
+    # Format analysis results with timestamps and types
+    for result in context.analysis_history:
+        # Handle both dict and AnalysisResult objects
+        if isinstance(result, dict):
+            timestamp = result.get('timestamp', 'N/A')
+            result_type = result.get('type', '')
+            command = result.get('command', None)
+            result_data = result.get('result', {})
+        else:
+            timestamp = result.timestamp
+            result_type = result.type
+            command = result.command
+            result_data = result.result
+            
+        history.append(f"\nAnalysis Result ({timestamp}):")
+        history.append(f"Type: {result_type}")
+        if command:
+            history.append(f"Command: {command}")
+        
+        if isinstance(result_data, dict):
+            for key, value in result_data.items():
+                history.append(f"- {key}: {value}")
     
     return "\n".join(history)
 
-def generate_chart_prompt_template(file_path: str, user_prompt: str, context_manager: ContextManager) -> str:
-    """Generate a complete prompt template with data analysis results, historical context, and user prompt"""
-    from codegen.app.base_eda import process_file
-    
-    # Get current analysis context
-    current_context = process_file(file_path)
-    
-    # Add current analysis to context manager
-    context_manager.add_analysis_result(current_context)
-    
-    # Get historical context
-    full_context = context_manager.get_context()
-    historical_context = format_historical_context(full_context)
-    
+def generate_chart_prompt_template(profile: DatasetProfile, context: Context) -> str:
+    """Generate a complete prompt template with dataset profile and conversation history"""
     template = create_base_template()
+    
+    # Validate that we have required data
+    if not profile or not context:
+        raise ValueError("Both profile and context are required to generate the prompt template")
+    
+    # Handle dict inputs
+    if isinstance(context, dict):
+        context = Context(**context)
+    if isinstance(profile, dict):
+        profile = DatasetProfile(**profile)
+    
+    # Check if conversation is complete
+    if context.session_info.conversation_complete:
+        template += "\nNote: This is a completed conversation. No further updates should be made."
+    
     return template.format(
-        data_quality_summary=format_data_quality_summary(current_context['data_quality']),
-        column_type_summary=format_column_type_summary(current_context['column_types']),
-        data_insights=format_data_insights(
-            current_context['basic_distribution_summary'],
-            current_context['outlier_report']
-        ),
-        filter_suggestions=format_filter_suggestions(
-            current_context['suggested_filters'],
-            current_context['date_frequencies']
-        ),
-        historical_context=historical_context,
-        user_prompt=user_prompt
+        dataset_profile=format_dataset_profile(profile),
+        conversation_history=format_conversation_history(context)
     )
 
 def parse_llm_response(response: str) -> Dict:
     """Parse the LLM response to extract the JSON configuration"""
     try:
+        # First try to parse the entire response as JSON
         return json.loads(response)
     except json.JSONDecodeError:
+        # Try to extract JSON from markdown code blocks
         import re
-        json_match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+        json_match = re.search(r'```(?:json)?\n(.*?)\n```', response, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group(1))
             except json.JSONDecodeError:
                 pass
         
+        # Try to extract anything that looks like JSON
         json_match = re.search(r'({[\s\S]*})', response)
         if json_match:
             try:
@@ -186,90 +228,93 @@ def parse_llm_response(response: str) -> Dict:
         return {}
 
 def example_chart_config() -> Dict:
-    """Returns an enhanced example chart configuration"""
+    """Returns an example ECharts configuration with exactly 4 charts"""
     return {
         "dashboard_config": {
-            "title": "Sales Performance Dashboard",
-            "description": "Interactive dashboard showing sales performance metrics",
-            "layout": "responsive",
+            "title": "Data Analysis Dashboard",
+            "description": "Interactive dashboard showing key insights from the dataset",
             "theme": "light",
             "charts": [
                 {
-                    "chart_id": "sales_trend",
-                    "chart_type": "Line",
-                    "title": "Sales Trend Over Time",
-                    "description": "Shows the trend of sales over time with the ability to filter by product category",
-                    "data_requirements": {
-                        "required_columns": ["date", "sales_amount", "product_category"],
-                        "aggregations": ["sum", "average"],
-                        "filters": ["date_range", "product_category"],
-                        "transformations": ["daily_to_monthly"]
+                    "chart_id": "time_series_trend",
+                    "chart_type": "line",
+                    "title": {
+                        "text": "Temporal Trend Analysis",
+                        "left": "center"
                     },
-                    "visual_config": {
-                        "x_axis": {
-                            "type": "time",
-                            "name": "Date",
-                            "format": "YYYY-MM-DD"
-                        },
-                        "y_axis": {
-                            "type": "value",
-                            "name": "Sales Amount",
-                            "format": "currency"
-                        },
-                        "series": {
-                            "type": "line",
-                            "smooth": True,
-                            "color": ["#91cc75"]
-                        },
-                        "tooltip": {
-                            "trigger": "axis",
-                            "formatter": "{b}: ${c}"
-                        },
-                        "legend": {
-                            "show": True,
-                            "position": "top"
+                    "tooltip": {
+                        "trigger": "axis",
+                        "axisPointer": {
+                            "type": "cross"
                         }
                     },
-                    "interactions": {
-                        "drill_down": {
-                            "enabled": True,
-                            "levels": ["year", "quarter", "month", "day"]
-                        },
-                        "filters": ["category", "date_range"],
-                        "highlights": ["click", "hover"]
+                    "legend": {
+                        "data": ["Value"],
+                        "type": "scroll",
+                        "bottom": 0
                     },
-                    "api_requirements": {
-                        "endpoint": "/api/sales/trend",
-                        "parameters": {
-                            "start_date": "string",
-                            "end_date": "string",
-                            "category": "string",
-                            "aggregation": "string"
+                    "dataset": {
+                        "source": [["timestamp", "value"]],
+                        "dimensions": ["timestamp", "value"]
+                    },
+                    "xAxis": {
+                        "type": "time",
+                        "name": "Date"
+                    },
+                    "yAxis": {
+                        "type": "value",
+                        "name": "Value"
+                    },
+                    "series": [{
+                        "type": "line",
+                        "name": "Value",
+                        "encode": {
+                            "x": "timestamp",
+                            "y": "value"
                         },
-                        "response_format": {
-                            "dates": "array",
-                            "values": "array",
-                            "categories": "array"
+                        "emphasis": {
+                            "focus": "series"
+                        }
+                    }],
+                    "dataZoom": [{
+                        "type": "slider",
+                        "show": true,
+                        "bottom": 30
+                    }, {
+                        "type": "inside"
+                    }],
+                    "toolbox": {
+                        "feature": {
+                            "dataZoom": {},
+                            "restore": {},
+                            "saveAsImage": {}
                         }
                     }
-                }
-                # ... additional chart configurations ...
+                },
+                # ... 3 more chart configurations with similar structure ...
             ]
         }
     }
 
 if __name__ == "__main__":
-    # Example usage
-    file_path = "sample_data.csv"
-    user_prompt = "Create a sales dashboard with trend analysis, category breakdown, and payment method distribution."
+    # Example usage with new context management system
+    context_manager = ContextManager()
     
-    # Initialize context manager
-    context_manager = ContextManager("sales_dashboard_context.json")
+    # Add some mock data for testing
+    context_manager.add_mock_entries()
     
-    # Generate prompt template
-    prompt = generate_chart_prompt_template(file_path, user_prompt, context_manager)
-    print(prompt)
+    # Get the profile and context
+    profile = context_manager.get_dataset_profile()
+    context = Context(**context_manager.get_context())
     
-    # Example of what the output might look like
-    print("\nExample output configuration:")
-    print(json.dumps(example_chart_config(), indent=2)) 
+    if profile:
+        try:
+            prompt = generate_chart_prompt_template(profile, context)
+            print(prompt)
+            
+            print("\nExample output configuration:")
+            print(json.dumps(example_chart_config(), indent=2))
+        except Exception as e:
+            print(f"Error generating prompt template: {e}")
+    else:
+        print("No dataset profile available. Please upload a dataset first.") 
