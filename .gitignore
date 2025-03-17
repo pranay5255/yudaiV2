@@ -16,9 +16,15 @@
 # next.js
 /.next/
 /out/
+/codegen/outputs
+/codegen/__pycache__
+/codegen/.venv
+
+
 
 # production
 /build
+/outputs
 
 # misc
 .DS_Store
