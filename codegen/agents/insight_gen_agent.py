@@ -53,7 +53,7 @@ class InsightGenAgent:
             # Create user message with the profile summary
             user_message = {
                 "role": "user",
-                "content": f"Based on this dataset profile summary, generate three insights and choose three relevant questions which are connected to the insights:\n\n{profile_summary}"
+                "content": f"Based on this dataset profile summary, generate three insights and create three relevant open-ended questions which are connected to the insights:\n\n{profile_summary}"
             }
             
             # Call OpenAI API with proper message structure
