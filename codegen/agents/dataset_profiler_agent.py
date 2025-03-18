@@ -62,7 +62,7 @@ class DatasetProfilerAgent:
                     "HTTP-Referer": "", 
                     "X-Title": "",
                 },
-                model="mistralai/mistral-small-3.1-24b-instruct-2503",
+                model="qwen/qwq-32b:free",
                 messages=[
                     {
                         "role": "system",
@@ -70,7 +70,7 @@ class DatasetProfilerAgent:
                     },
                     user_message
                 ],
-                temperature=0.6,
+                temperature=0.8,
                 max_tokens=2048,
                 top_p=1
             )
