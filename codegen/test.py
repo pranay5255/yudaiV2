@@ -5,9 +5,9 @@ from pathlib import Path
 import json
 import logging
 
-from app.base_eda import DataProfiler
+from codegen.agents.base_eda import DataProfiler
 from app.context_manager import ContextManager
-from app.prompt_template_orchestrator import generate_prompt_template
+from codegen.agents.prompt_template_orchestrator import generate_prompt_template
 from app.summary_agent_prompt_template import (
     generate_chart_prompt_template,
     example_chart_config,
@@ -108,7 +108,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     # Define paths
-    sample_data_path = os.path.join(os.getcwd(), "app/data/sample_data.csv")
+    sample_data_path = os.path.join(os.getcwd(), "app/sample_data.csv")
     
     # Run pipeline
     profile_path = run_data_profiler(sample_data_path, output_dir)

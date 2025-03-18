@@ -2,8 +2,8 @@ from typing import Dict, Any
 import json
 import os
 from app.summary_agent_prompt_template import generate_chart_prompt_template, parse_llm_response, generate_chart_prompt_from_json
-from app.base_eda import process_file
-from app.prompt_template_orchestrator import create_base_template
+from codegen.agents.base_eda import process_file
+from codegen.agents.prompt_template_orchestrator import create_base_template
 from app.context_manager import ContextManager
 from datetime import datetime
 

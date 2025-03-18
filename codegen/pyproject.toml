@@ -11,6 +11,7 @@ dependencies = [
     "isort>=5.0.0",
     "jupyter>=1.0.0",
     "numpy>=1.21.0",
+    "openai>=1.66.3",
     "openpyxl>=3.1.0",
     "pandas>=1.5.0",
     "pydantic>=2.0.0",
