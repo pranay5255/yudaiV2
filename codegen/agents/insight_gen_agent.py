@@ -14,10 +14,13 @@ class InsightGenAgent:
     """Agent responsible for generating insights and questions based on dataset profile summaries"""
     
     def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment variables")
-        self.client = OpenAI(api_key=api_key)
+            raise ValueError("OPENROUTER_API_KEY not found in environment variables")
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key
+        )
         self.system_message = {
             "role": "system",
             "content": """You are an expert data analyst. Your task is to:
@@ -48,26 +51,19 @@ class InsightGenAgent:
             }
             
             # Call OpenAI API with proper message structure
-            response = self.client.responses.create(
-                model="gpt-4o-mini",
-                input=[{
-                    "role": "system",
-                    "content": self.system_message["content"]
-                }, {
-                    "role": "user",
-                    "content": user_message["content"]
-                }],
-                text={
-                    "format": {
-                        "type": "text"
-                    }
+            response = self.client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://github.com/yudai-data-analysis", 
+                    "X-Title": "Yudai Data Analysis",
                 },
-                reasoning={},
-                tools=[],
+                model="openai/gpt-4",
+                messages=[
+                    self.system_message,
+                    user_message
+                ],
                 temperature=0.6,
-                max_output_tokens=2048,
-                top_p=1,
-                store=True
+                max_tokens=2048,
+                top_p=1
             )
             
             # Parse response

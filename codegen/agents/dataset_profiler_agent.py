@@ -15,10 +15,13 @@ class DatasetProfilerAgent:
     """Agent responsible for analyzing and summarizing dataset profile information"""
     
     def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment variables")
-        self.client = OpenAI(api_key=api_key)
+            raise ValueError("OPENROUTER_API_KEY not found in environment variables")
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key
+        )
         self.system_message = {
             "role": "system",
             "content": """You are a data profiling expert. Your task is to analyze JSON profile data and extract key insights.
@@ -30,7 +33,13 @@ class DatasetProfilerAgent:
             5. Relationships - notable correlations or patterns
             6. Potential Issues - data quality alerts or concerns
             
-            Format your response as a clear, structured summary with sections."""
+            Go through each section of the JSON data given without skipping any keys.
+            Your response be in line with idea of driving a user to efficiently explore the data.
+            You must also suggest transformations that can be applied to the data to make it more useful.
+
+            Your response must be insightful and concise.
+            
+            """
         }
 
     def generate_profile_summary(self, profile_path: str) -> str:
@@ -48,26 +57,22 @@ class DatasetProfilerAgent:
             }
             
             # Call OpenAI API with proper message structure
-            response = self.client.responses.create(
-                model="gpt-4o-mini",
-                input=[{
-                    "role": "system",
-                    "content": self.system_message["content"]
-                }, {
-                    "role": "user",
-                    "content": user_message["content"]
-                }],
-                text={
-                    "format": {
-                        "type": "text"
-                    }
+            response = self.client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "", 
+                    "X-Title": "",
                 },
-                reasoning={},
-                tools=[],
+                model="mistralai/mistral-small-3.1-24b-instruct-2503",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": self.system_message["content"]
+                    },
+                    user_message
+                ],
                 temperature=0.6,
-                max_output_tokens=2048,
-                top_p=1,
-                store=True
+                max_tokens=2048,
+                top_p=1
             )
             
             return response.choices[0].message.content
