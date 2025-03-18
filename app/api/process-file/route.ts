@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
         try {
             // Execute the Python profiling script
-            const scriptPath = join(process.cwd(), 'codegen/app/base_eda.py');
+            const scriptPath = join(process.cwd(), 'codegen/agents/base_eda.py');
             console.log(scriptPath);
             console.log(uploadPath);
 
