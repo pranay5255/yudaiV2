@@ -62,7 +62,7 @@ class InsightGenAgent:
                     "HTTP-Referer": "", 
                     "X-Title": "",
                 },
-                model="qwen/qwq-32b:free",
+                model="mistralai/mistral-small-3.1-24b-instruct:free",
                 messages=[
                     self.system_message,
                     user_message
@@ -77,18 +77,37 @@ class InsightGenAgent:
             insights = []
             questions = []
             
-            lines = content.split('\n')
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
+            # More robust parsing using string markers
+            for tag_type in ['INSIGHT', 'QUESTION']:
+                for i in range(1, 4):  # We expect exactly 3 of each
+                    start_tag = f'<{tag_type}_{i}>:'
+                    end_tag = f'</{tag_type}_{i}>'
                     
-                if '<INSIGHT_' in line and '</INSIGHT_' in line:
-                    insight = line[line.find('>:')+2:line.rfind('<')].strip()
-                    insights.append(insight)
-                elif '<QUESTION_' in line and '</QUESTION_' in line:
-                    question = line[line.find('>:')+2:line.rfind('<')].strip()
-                    questions.append(question)
+                    try:
+                        start_idx = content.find(start_tag)
+                        if start_idx == -1:
+                            logger.error(f"Could not find start tag {start_tag}")
+                            continue
+                            
+                        end_idx = content.find(end_tag, start_idx)
+                        if end_idx == -1:
+                            logger.error(f"Could not find end tag {end_tag}")
+                            continue
+                            
+                        # Extract the text between start_tag and end_tag
+                        text = content[start_idx + len(start_tag):end_idx].strip()
+                        
+                        if tag_type == 'INSIGHT':
+                            insights.append(text)
+                        else:
+                            questions.append(text)
+                            
+                    except Exception as e:
+                        logger.error(f"Error parsing {tag_type}_{i}: {str(e)}")
+            
+            # Validate we got the expected number of insights and questions
+            if len(insights) != 3 or len(questions) != 3:
+                logger.warning(f"Expected 3 insights and 3 questions, but got {len(insights)} insights and {len(questions)} questions")
             
             return insights, questions
 

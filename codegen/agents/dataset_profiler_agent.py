@@ -62,7 +62,7 @@ class DatasetProfilerAgent:
                     "HTTP-Referer": "", 
                     "X-Title": "",
                 },
-                model="qwen/qwq-32b:free",
+                model="nousresearch/hermes-3-llama-3.1-70b",
                 messages=[
                     {
                         "role": "system",
