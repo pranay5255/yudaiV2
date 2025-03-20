@@ -11,19 +11,40 @@ export default function Home() {
     const [isUploading, setIsUploading] = useState(false);
     const [datasetStats, setDatasetStats] = useState<DatasetProfile | null>(null);
 
-    const handleSubmit = (message: string) => {
-        if (!message.trim()) return;
+    const handleSubmit = async (message: string) => {
+        if (!message.trim() || !datasetStats) return;
 
         // Add user message
         setMessages(prev => [...prev, { text: message, isUser: true }]);
         
-        // Simulate bot response (you can replace this with actual API call)
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/chat/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to get response from chat API');
+            }
+            
+            const result = await response.json();
+            
+            // Add assistant's response
             setMessages(prev => [...prev, { 
-                text: "This is a demo response. Replace with actual chatbot integration!", 
+                text: result.message + (result.code ? `\n\n\`\`\`python\n${result.code}\n\`\`\`` : ''), 
                 isUser: false 
             }]);
-        }, 1000);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            setMessages(prev => [...prev, { 
+                text: `Error: ${errorMessage}`, 
+                isUser: false 
+            }]);
+        }
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
