@@ -68,32 +68,11 @@ class Variable(BaseModel):
     n_invalid_dates: Optional[int] = None
     p_invalid_dates: Optional[float] = None
 
-class Correlation(BaseModel):
-    auto: List[Dict[str, float]]
 
-class Missing(BaseModel):
-    bar: Dict[str, Any]
-    matrix: Dict[str, Any]
-
-class Package(BaseModel):
-    ydata_profiling_version: str
-    ydata_profiling_config: str
-
-class Sample(BaseModel):
-    id: str
-    data: List[Dict[str, Any]]
-    name: str
-    caption: Optional[str] = None
 
 class DatasetProfile(BaseModel):
     analysis: Analysis
     time_index_analysis: Optional[str] = None
     table: Table
     variables: Dict[str, Variable]
-    scatter: Dict[str, Any]
-    correlations: Correlation
-    missing: Missing
     alerts: List[str]
-    package: Package
-    sample: List[Sample]
-    duplicates: List[Any]

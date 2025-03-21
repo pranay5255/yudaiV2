@@ -1,29 +1,53 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 import { ChatInput } from './components/ChatInput';
 import { Sidebar } from './components/Sidebar';
 import { DatasetProfile } from '../codegen/app/models';
+import { useDataset } from './context/DatasetContext';
 
 export default function Home() {
+    const router = useRouter();
+    const { datasetStats, setDatasetStats } = useDataset();
     const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
     const [file, setFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [datasetStats, setDatasetStats] = useState<DatasetProfile | null>(null);
 
-    const handleSubmit = (message: string) => {
-        if (!message.trim()) return;
+    const handleSubmit = async (message: string) => {
+        if (!message.trim() || !datasetStats) return;
 
         // Add user message
         setMessages(prev => [...prev, { text: message, isUser: true }]);
         
-        // Simulate bot response (you can replace this with actual API call)
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/chat/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to get response from chat API');
+            }
+            
+            const result = await response.json();
+            
+            // Add assistant's response
             setMessages(prev => [...prev, { 
-                text: "This is a demo response. Replace with actual chatbot integration!", 
+                text: result.message + (result.code ? `\n\n\`\`\`python\n${result.code}\n\`\`\`` : ''), 
                 isUser: false 
             }]);
-        }, 1000);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            setMessages(prev => [...prev, { 
+                text: `Error: ${errorMessage}`, 
+                isUser: false 
+            }]);
+        }
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,6 +123,13 @@ export default function Home() {
                                     {isUploading ? 'Uploading...' : 'Upload CSV'}
                                 </span>
                             </label>
+                            <button
+                                onClick={() => router.push('/datag')}
+                                className="px-4 py-2 rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors"
+                                disabled={!datasetStats}
+                            >
+                                Data Graph
+                            </button>
                             {file && (
                                 <span className="text-gray-300 text-sm">
                                     File: {file.name}

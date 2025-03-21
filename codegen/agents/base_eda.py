@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 from ydata_profiling import ProfileReport
 import logging
-# from models import DatasetProfile
+# from app.models import DatasetProfile
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,11 +35,13 @@ class DataProfiler:
 
     def generate_profile(self, df: pd.DataFrame, dataset_name: str) -> Dict[str, Any]:
         """Generate profile using YData Profiling"""
-
-        
         try:
-            # Create YData profile
-            profile = ProfileReport(df,title=dataset_name,config_file='/home/pranay5255/Documents/yudaiV2/yudaiv2/codegen/agents/config.yml')
+            # Get the directory where the current script is located
+            current_dir = Path(__file__).parent
+            config_path = current_dir / 'config.yml'
+            
+            # Create YData profile with absolute path to config
+            profile = ProfileReport(df, title=dataset_name, config_file=str(config_path))
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{dataset_name}_{timestamp}_profile.json"

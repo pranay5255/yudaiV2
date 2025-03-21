@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
         try {
             // Execute the Python profiling script
-            const scriptPath = join(process.cwd(), 'codegen/app/base_eda.py');
+            const scriptPath = join(process.cwd(), 'codegen/agents/base_eda.py');
             console.log(scriptPath);
             console.log(uploadPath);
 
@@ -60,6 +60,10 @@ export async function POST(request: NextRequest) {
             if (!profileData.analysis || !profileData.table || !profileData.variables) {
                 throw new Error('Invalid profile data structure');
             }
+
+            // // Initialize context with the new profile
+            // const initContextPath = join(process.cwd(), 'codegen/scripts/init_context.py');
+            // await execAsync(`pnpm exec python3 "${initContextPath}" "${profilePath}"`);
 
             return NextResponse.json({
                 success: true,
