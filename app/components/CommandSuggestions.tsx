@@ -37,7 +37,7 @@ export const CommandSuggestions: React.FC<CommandSuggestionsProps> = ({
 
   return (
     <div
-      className="absolute z-50 bg-gray-800 rounded-lg shadow-lg border border-gray-700 w-80"
+      className="absolute z-100 bg-gray-800 rounded-lg shadow-lg border border-gray-700 w-100 max-h-[30px] overflow-y-auto"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
