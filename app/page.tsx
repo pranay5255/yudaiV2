@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 import { ChatInput } from './components/ChatInput';
 import { Sidebar } from './components/Sidebar';
 import { DatasetProfile } from '../codegen/app/models';
+import { useDataset } from './context/DatasetContext';
 
 export default function Home() {
+    const router = useRouter();
+    const { datasetStats, setDatasetStats } = useDataset();
     const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
     const [file, setFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [datasetStats, setDatasetStats] = useState<DatasetProfile | null>(null);
 
     const handleSubmit = async (message: string) => {
         if (!message.trim() || !datasetStats) return;
@@ -120,6 +123,13 @@ export default function Home() {
                                     {isUploading ? 'Uploading...' : 'Upload CSV'}
                                 </span>
                             </label>
+                            <button
+                                onClick={() => router.push('/datag')}
+                                className="px-4 py-2 rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors"
+                                disabled={!datasetStats}
+                            >
+                                Data Graph
+                            </button>
                             {file && (
                                 <span className="text-gray-300 text-sm">
                                     File: {file.name}

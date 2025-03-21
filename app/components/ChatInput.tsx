@@ -46,8 +46,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       const rect = inputRef.current?.getBoundingClientRect();
       if (rect) {
         setSuggestionPosition({
-          top: rect.top - 200,
-          left: rect.left
+          top: rect.top - 1000,
+          left: rect.left - 300
         });
       }
       setShowSuggestions(true);
@@ -65,7 +65,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={datasetProfile ? "Type / for commands or enter your message..." : "Upload a dataset to begin analysis..."}
-          className="flex-1 resize-none rounded-lg bg-gray-700 p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[50px] max-h-[150px] overflow-y-auto"
+          className="flex-1 rounded-lg bg-gray-700 p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[50px] max-h-[150px]"
           disabled={disabled || !datasetProfile}
         />
         <button

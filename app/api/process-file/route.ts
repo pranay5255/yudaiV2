@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
                 throw new Error('Invalid profile data structure');
             }
 
-            // Initialize context with the new profile
-            const initContextPath = join(process.cwd(), 'codegen/scripts/init_context.py');
-            await execAsync(`pnpm exec python3 "${initContextPath}" "${profilePath}"`);
+            // // Initialize context with the new profile
+            // const initContextPath = join(process.cwd(), 'codegen/scripts/init_context.py');
+            // await execAsync(`pnpm exec python3 "${initContextPath}" "${profilePath}"`);
 
             return NextResponse.json({
                 success: true,
