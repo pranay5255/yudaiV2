@@ -1,40 +1,85 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useDataset } from '../context/DatasetContext';
+import { DatasetProfile } from '../../codegen/app/models';
 
 interface DataNode {
     name: string;
     value: string;
+    version: string;
 }
 
 interface DataLink {
     source: string;
     target: string;
     label: string;
+    transformation: string;
+}
+
+interface DataVersion {
+    version: string;
+    transformation?: string;
+    timestamp: Date;
 }
 
 export const DataGraph: React.FC = () => {
-    // Sample data - in a real app, this would come from props or an API
-    const nodes: DataNode[] = [
-        { name: 'Original', value: 'v1' },
-        { name: 'Cleaned', value: 'v2' },
-        { name: 'Transformed', value: 'v3' }
-    ];
+    const { datasetStats } = useDataset();
+    const [nodes, setNodes] = useState<DataNode[]>([
+        { name: 'Original Data', value: 'v0.0', version: 'v0.0' }
+    ]);
+    const [links, setLinks] = useState<DataLink[]>([]);
 
-    const links: DataLink[] = [
-        { source: 'Original', target: 'Cleaned', label: 'Remove duplicates' },
-        { source: 'Cleaned', target: 'Transformed', label: 'Normalize values' }
-    ];
+    // Effect to handle transformation updates
+    useEffect(() => {
+        if (datasetStats?.transformations) {
+            // Reset nodes and links when dataset changes
+            setNodes([{ name: 'Original Data', value: 'v0.0', version: 'v0.0' }]);
+            setLinks([]);
+
+            // Add nodes and links for each transformation
+            datasetStats.transformations.forEach((transformation, index) => {
+                const version = `v${index + 1}.0`;
+                const newNode: DataNode = {
+                    name: `Version ${version}`,
+                    value: version,
+                    version: version
+                };
+
+                // Add edge from previous version
+                const prevVersion = nodes[nodes.length - 1].version;
+                const newLink: DataLink = {
+                    source: prevVersion,
+                    target: version,
+                    label: transformation.description,
+                    transformation: transformation.description
+                };
+
+                setNodes(prev => [...prev, newNode]);
+                setLinks(prev => [...prev, newLink]);
+            });
+        }
+    }, [datasetStats?.transformations]);
 
     const option = {
         tooltip: {
             trigger: 'item',
-            formatter: '{b}: {c}'
+            formatter: (params: any) => {
+                if (params.dataType === 'node') {
+                    return `${params.data.name}<br/>Version: ${params.data.version}`;
+                } else {
+                    return `Transformation: ${params.data.transformation}`;
+                }
+            }
         },
         animationDurationUpdate: 1500,
         animationEasingUpdate: 'quinticInOut',
         series: [{
             type: 'graph',
-            layout: 'circular',
+            layout: 'force',
+            force: {
+                repulsion: 100,
+                edgeLength: 100
+            },
             symbolSize: 50,
             roam: true,
             label: {
@@ -52,6 +97,7 @@ export const DataGraph: React.FC = () => {
             data: nodes.map(node => ({
                 name: node.name,
                 value: node.value,
+                version: node.version,
                 itemStyle: {
                     color: '#1890ff'
                 }
@@ -60,7 +106,7 @@ export const DataGraph: React.FC = () => {
                 source: link.source,
                 target: link.target,
                 name: link.label,
-                value: link.label,
+                transformation: link.transformation,
                 lineStyle: {
                     color: '#999',
                     width: 2
