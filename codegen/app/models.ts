@@ -139,6 +139,13 @@ interface DuplicateData {
     percentage: number;
 }
 
+// Interface for transformations
+interface Transformation {
+    description: string;  // Description of the transformation
+    timestamp: string;    // When the transformation was applied
+    version: string;      // Version number of the transformation
+}
+
 // Root interface for the entire profiling output
 export interface DatasetProfile {
     analysis: Analysis;                        // Analysis metadata
@@ -152,4 +159,5 @@ export interface DatasetProfile {
     package: Package;                          // Package metadata
     sample: Sample[];                          // List of sample sections
     duplicates: DuplicateData[];              // List of duplicate rows or related data
+    transformations: Transformation[];         // List of transformations applied to the dataset
 }
