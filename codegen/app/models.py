@@ -68,7 +68,10 @@ class Variable(BaseModel):
     n_invalid_dates: Optional[int] = None
     p_invalid_dates: Optional[float] = None
 
-
+class Transformation(BaseModel):
+    description: str
+    timestamp: str
+    version: str
 
 class DatasetProfile(BaseModel):
     analysis: Analysis
@@ -76,3 +79,4 @@ class DatasetProfile(BaseModel):
     table: Table
     variables: Dict[str, Variable]
     alerts: List[str]
+    transformations: List[Transformation] = []
