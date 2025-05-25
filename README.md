@@ -1,119 +1,119 @@
-# Yudai v2&#x20;
+# Yudai V2 — **Lean MVP (4‑Week) Roadmap & PRD**
 
-> **Local, private & lightning‑fast analytics.** Drop your CSV ☞ chat with your data ☞ ship the deck before your next stand‑up.
-
----
-
-## 🎯 Why Yudai v2?
-
-Product & Growth Managers shouldn’t have to beg for SQL snippets or wait a sprint for a dashboard. Yudai v2 turns **plain‑English questions into interactive charts** right on your laptop—no cloud bill, no data leaks, no setup nightmares.
-
-***TL;DR***\*: Clone → **`pnpm dev`** → upload → insight.\*
+> **Goal:** Ship a demo‑ready, fully‑local version of Yudai V2 that turns a **CSV + prompt** into a tested dbt model and an interactive dashboard rendered with **echarts‑for‑react**.
 
 ---
 
-## 📚 Table of Contents
+## 0 · Strategic Changes ("Ruthless Subtraction")
 
-* [Key Features](#key-features)
-* [Quick Start](#quick-start)
-* [How It Works](#how-it-works)
-* [Roadmap & Status](#roadmap--status)
-* [Contributing](#contributing)
-* [License](#license)
-* [Go to Top](#TOP)
+|✅ **Keep**|❌ **Cut**|➕ **Add**|
+|---|---|---|
+|Next.js + React frontend|Manual Python DAG logic|**dbt‑Core (+ DuckDB adapter)** as the single transformation layer|
+|`echarts-for-react` chart wrapper|Spark & BigQuery connectors|**Python Subprocess Orchestrator** 👉 executes dbt commands based on prompt|
+|Solo‑Server Docker for on‑board LLM|Streaming (Kafka/Kinesis)|**Dataset versioning** via dbt snapshots & hashed file paths|
+|Python EDA agents (Dask optional)|Slack / Monte‑Carlo observability|**/api/dashboards** endpoint that returns a JSON payload each chart slice consumes|
 
----
-
-## Key Features
-
-| Status | Feature                                                                     | For you, PM!                           |
-| ------ | --------------------------------------------------------------------------- | -------------------------------------- |
-| ✅      | **Chat‑first Analytics** — ask *“Which cohort retains best?”* & get a chart | Skip SQL; stay strategic               |
-| ✅      | **Drag‑&‑Drop CSV Upload**                                                  | Zero config, zero friction             |
-| ✅      | **Auto‑Generated Insights**                                                 | Instantly share hot‑takes in Slack     |
-| ✅      | **Interactive Dashboard Layout**                                            | Rearrange, resize, export to PNG       |
-| 🛠️    | **Prompt → Full Dashboard Code‑Gen**                                        | One‑click PR for an embeddable app     |
-| 🛠️    | **TabPFN Auto‑ML Forecasts**                                                | Push‑button predictive power           |
-| 🛠️    | **Real‑Time Data Connectors**                                               | Mixpanel, GA4, Amplitude, Snowflake    |
-| 🛠️    | **Role‑Based Collaboration**                                                | Comment threads, @mentions, versioning |
-
-> 🗒️ *Legend*: ✅ Implemented  |  🛠️ In‑progress  |  🚧 Planned
+The result is a lighter stack that fits on a laptop yet proves the full prompt→pipeline→chart loop.
 
 ---
 
-## Quick Start&#x20;
+## 1 · One‑Month Roadmap (Week‑by‑Week)
 
-```bash
-# 1 – Clone & install deps
-$ git clone https://github.com/yourname/yudai-v2.git && cd yudai-v2
-$ pnpm i                                  # Node deps
-$ python -m venv .venv && source .venv/bin/activate
-$ pip install -r codegen/requirements.txt # Python agents
-
-# 2 – Add your OpenRouter or OpenAI key
-a$ cp .env.example .env && $EDITOR .env
-
-# 3 – Run dev servers
-$ pnpm dev     # http://localhost:3000
-```
-
-> **Time to first insight:** \~2 minutes on a fresh laptop. ⏱️💨
+|Week|Theme|Must‑Do Tasks|Deliverables|
+|---|---|---|---|
+|**W‑1**|**Repo Cleanup + Scaffold**|– Delete manual DAG code.– Add `dbt_project.yml` (duckdb profile).– Implement a Python script (`orchestrate_dbt.py`) that can execute `dbt seed → run → test` using subprocesses.– Ensure `echarts-for-react` + Tailwind compile.|Monorepo boots via `./dev_up.sh`; Python script successfully runs dbt commands; React page renders a static ECharts demo.|
+|**W‑2**|**Prompt→dbt Codegen**|– Extend Orchestrator agent: emits dbt model SQL + `tests.yml` + snapshot when user submits prompt.– Store files in `/models/generated/` and trigger the `orchestrate_dbt.py` script with necessary parameters.– Version incoming CSV with `<sha256>.csv`.|Prompt produces passing dbt tests; table appears in DuckDB; Python orchestration script runs successfully.|
+|**W‑3**|**API + Chart Generator**|– Define `/api/dashboards/:id` that returns `{ charts: [ { id, echartsOptions } ], data: {...} }`.– LLM agent also returns `EChartsOption` JSON per chart.– React `ChartCard` consumes options + slices data.– Add hook to refresh when dbt run (via Python script) completes.|Live dashboard on localhost after prompt with at least 3 chart types (bar, line, pie).|
+|**W‑4**|**Hardening & Pilot Demo**|– Add dbt snapshot tests for slowly‑changing dims.– CLI `yudai backfill` for historical re‑runs (utilizing the Python orchestrator).– Polish UX, write README install guide.– Collect feedback from 10 PMs.|Tag `v0.1.0‑mvp`; demo video + zip for testers.|
 
 ---
 
-## How It Works&#x20;
+## 2 · Product Requirements Document (MVP)
 
-1. **Upload** csv → saved to `codegen/uploads/`
-2. **Python DatasetProfilerAgent** inspects schema & quality
-3. **InsightGenAgent** crafts bullet‑point stories
-4. **Orchestrator** streams chat replies back to Next.js via `api/conversation`
-5. **React Dashboard** renders charts with Recharts + ShadCN UI
+### 2.1 Problem Statement
 
-*All agent logic is LangChain‑free, so you can read the 200 loc orchestration with morning coffee.*
+PMs need reliable metrics fast, without sending data to the cloud. Yudai V2 should let them ingest a CSV, type a question, and receive a tested dashboard — **entirely offline**.
+
+### 2.2 Success Metrics
+
+|Metric|Target|
+|---|---|
+|Prompt→dashboard success rate|≥ 80 %|
+|Cold install time|≤ 10 min|
+|Local inference only|0 external calls|
+|Pilot SUS score|≥ 75|
+
+### 2.3 In Scope
+
+- Solo‑Server LLM container
+    
+- Python-orchestrated dbt pipelines on DuckDB
+    
+- ECharts dashboards in React
+    
+- Single `/api/dashboards` JSON contract
+    
+- Data versioning via dbt snapshots
+    
+
+### 2.4 Out‑of‑Scope
+
+- Spark / BigQuery / Streaming connectors
+    
+- Monte‑Carlo, Slack alerts, Spark executor
+    
+- Multi‑tenant auth
+    
+
+### 2.5 Key User Stories
+
+1. **Upload & Ask** — PM uploads `sales.csv`, types “Show quarterly revenue & top‑5 products”. System builds dbt model + dashboard.
+    
+2. **Iterate** — PM edits prompt “Segment by region too”; only the transformed layer is rerun.
+    
+3. **Backfill** — PM runs `yudai backfill --id qtr_revenue --start 2022‑01‑01` to regenerate old metrics.
+    
+
+### 2.6 Functional Requirements
+
+- **FR‑1**: `docker compose up` starts Solo‑Server, DuckDB, Next.js (Python orchestrator will be part of the backend logic or a simple script).
+    
+- **FR‑2**: Orchestrator agent writes dbt SQL + tests to `models/generated`.
+    
+- **FR‑3**: Python orchestrator script executes `dbt seed|run|test` and sets status.
+    
+- **FR‑4**: `/api/dashboards/:id` returns chart options & data.
+    
+- **FR‑5**: React dashboard renders ≤ 3 s for ≤ 500 k rows.
+    
+
+### 2.7 Non‑Functional
+
+- Works on macOS ARM & Linux.
+    
+- All data stored in `~/yudai/data` with file hash directories.
+    
+
+### 2.8 Milestones
+
+|Day|Milestone|
+|---|---|
+|**0**|Kick‑off & repo cleanup|
+|**7**|Scaffold passes CI, ECharts demo up|
+|**14**|Prompt→dbt pipeline green|
+|**21**|API + dashboard live|
+|**28**|MVP release & pilot demo|
+
+### 2.9 Dependencies
+
+- `echarts-for-react` (MIT) – see docs: [https://github.com/hustcc/echarts-for-react](https://github.com/hustcc/echarts-for-react)
+    
+- `dbt-core`, `dbt-duckdb`
+    
 
 ---
 
-## Roadmap & Status&#x20;
 
-### 🚀 Implemented
+    
 
-* Chat interface, drag‑&‑drop uploads
-* Python EDA & insight agents (OpenRouter LLM)
-* Recharts‑powered interactive dashboard
-
-### 🚧 Not yet implemented
-
-* **Code‑gen service** that spits out a standalone Next.js dashboard repo
-* **Auto‑ML (TabPFN)** for time‑series forecasting
-* **Streaming connectors**: Snowflake, GA4, Amplitude
-* **RBAC & collaboration canvas**
-
-### 🔭 Upcoming 🌟
-
-| ETA     | Feature                                | Why you’ll care                             |
-| ------- | -------------------------------------- | ------------------------------------------- |
-| 2025‑06 | `/scratchpad → slide‑deck` auto‑export | Turn insights → exec‑ready PDF in one click |
-| 2025‑07 | "Ask my metrics" NL‑SQL                | Talk to Mixpanel like you talk to me        |
-| 2025‑08 | Slack daily KPI digest                 | Wake up to actionable deltas                |
-
-*Star the repo to follow the journey & drop feedback in Issues—your vote steers the backlog!* \:rocket:
-
----
-
-## Contributing&#x20;
-
-Pull requests are welcome! Check `CONTRIBUTING.md` (WIP) for setup, coding standards, and the agent eval harness.
-
-*
-
-We ❤️ PRs that improve docs, UX copy, and onboarding scripts just as much as hardcore code.
-
----
-
-## License&#x20;
-
-MIT — because sharing multiplies impact.
-
----
-
-[Go To TOP](#TOP)
+_Updated May 23 2025 — Pranay K._
