@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: example_model
+    description: "An example model for testing dbt setup"
+    columns:
+      - name: id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Name field"
+        tests:
+          - not_null
+
+sources:
+  - name: raw_data
+    description: "Raw data from CSV uploads"
+    tables:
+      - name: uploaded_csv
+        description: "Dynamically uploaded CSV files" 
