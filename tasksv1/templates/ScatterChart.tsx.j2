@@ -1,0 +1,22 @@
+"use client";
+// @ts-nocheck
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+
+interface DataPoint {
+  {{ x }}: number;
+  {{ y }}: number;
+  {{ category }}: string;
+}
+
+export default function ScatterChartComponent({ data }: { data: DataPoint[] }) {
+  return (
+    <ScatterChart width={400} height={300}>
+      <CartesianGrid />
+      <XAxis dataKey="{{ x }}" type="number" />
+      <YAxis dataKey="{{ y }}" type="number" />
+      <Tooltip />
+      <Legend />
+      <Scatter dataKey="{{ y }}" name="{{ name }}" data={data} />
+    </ScatterChart>
+  );
+}

@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import logging
+from pathlib import Path
 from ..main import process_message, process_file
+from ..scaffolder import generate_project
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +28,9 @@ class MessageRequest(BaseModel):
 class MessageResponse(BaseModel):
     message: str
     code: Optional[str] = None
+
+class GenerateRequest(BaseModel):
+    spec: Dict[str, Any]
 
 @app.post("/chat/message", response_model=MessageResponse)
 async def handle_message(request: MessageRequest):
@@ -51,4 +56,14 @@ async def handle_file_upload(file_path: str):
         raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
         logger.error(f"Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate")
+async def generate_project_endpoint(req: GenerateRequest):
+    """Generate Next.js project based on specification."""
+    try:
+        output_dir = generate_project(req.spec, Path("tasksv1/projects"))
+        return {"success": True, "path": str(output_dir)}
+    except Exception as e:
+        logger.error(f"Error generating project: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
