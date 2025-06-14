@@ -1,8 +1,7 @@
 import React from 'react';
 
 interface DataTableProps {
-    // In a real app, this would be properly typed based on your data structure
-    data?: any[][];
+    data?: (string | number)[][];
     columns?: string[];
 }
 

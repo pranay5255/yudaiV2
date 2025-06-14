@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useDataset } from '../context/DatasetContext';
-import { DatasetProfile } from '../../codegen/app/models';
 
 interface DataNode {
     name: string;
@@ -16,11 +15,6 @@ interface DataLink {
     transformation: string;
 }
 
-interface DataVersion {
-    version: string;
-    transformation?: string;
-    timestamp: Date;
-}
 
 export const DataGraph: React.FC = () => {
     const { datasetStats } = useDataset();
@@ -32,43 +26,42 @@ export const DataGraph: React.FC = () => {
     // Effect to handle transformation updates
     useEffect(() => {
         if (datasetStats?.transformations) {
-            // Reset nodes and links when dataset changes
-            setNodes([{ name: 'Original Data', value: 'v0.0', version: 'v0.0' }]);
-            setLinks([]);
+            const initialNodes: DataNode[] = [
+                { name: 'Original Data', value: 'v0.0', version: 'v0.0' }
+            ];
+            const initialLinks: DataLink[] = [];
 
-            // Add nodes and links for each transformation
             datasetStats.transformations.forEach((transformation, index) => {
                 const version = `v${index + 1}.0`;
                 const newNode: DataNode = {
                     name: `Version ${version}`,
                     value: version,
-                    version: version
+                    version
                 };
-
-                // Add edge from previous version
-                const prevVersion = nodes[nodes.length - 1].version;
+                const prevVersion = initialNodes[index].version;
                 const newLink: DataLink = {
                     source: prevVersion,
                     target: version,
                     label: transformation.description,
                     transformation: transformation.description
                 };
-
-                setNodes(prev => [...prev, newNode]);
-                setLinks(prev => [...prev, newLink]);
+                initialNodes.push(newNode);
+                initialLinks.push(newLink);
             });
+
+            setNodes(initialNodes);
+            setLinks(initialLinks);
         }
     }, [datasetStats?.transformations]);
 
     const option = {
         tooltip: {
             trigger: 'item',
-            formatter: (params: any) => {
+            formatter: (params: { dataType: string; data: { name: string; version?: string; transformation?: string } }) => {
                 if (params.dataType === 'node') {
                     return `${params.data.name}<br/>Version: ${params.data.version}`;
-                } else {
-                    return `Transformation: ${params.data.transformation}`;
                 }
+                return `Transformation: ${params.data.transformation}`;
             }
         },
         animationDurationUpdate: 1500,
