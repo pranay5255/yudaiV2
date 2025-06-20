@@ -10,24 +10,25 @@ This supersedes the Yudai V2 Python backend.  It preserves the existing bespoke
 
 0. High‑Level Architecture
 
-┌────────────┐  (CSV + prompt)  ┌───────────────┐
-│   UI /     │ ───────────────▶ │ FastAPI Gate­│
-│ Next.js  ↔ │  SSE / files     │ way (backend) │
-├────────────┤                  └──────┬────────┘
-│  React +   │                         │
-│ echarts    │                         │ state
-└────────────┘                         ▼
-                             ┌──────────────────────┐
-                             │  LangGraph Workflow  │
-                             │  (LLM‑Supervisor)    │
-                             └──┬────────┬──────────┘
-                                │        │
-  ┌─────────────────────────────┘        └───────────────────────────────┐
-  ▼                                                                  ▼   ▼
-┌─────────────┐   EDA plots   ┌──────────────┐   TabPFN artefacts   ┌──────────────┐
-│  Analyst    │──────────────▶│  Scientist   │──────────────────────▶│  Reporter    │
-│ (bespoke)   │               │ (TabPFN)     │                       │ (pptx/MD)    │
-└─────────────┘               └──────────────┘                       └──────────────┘
+graph TD
+    UI["Front‑end<br/>(Next.js + React)"]
+    Gateway["FastAPI Gateway"]
+    Solo["Solo‑Server<br/>Local LLM"]
+    Supervisor["LLM Supervisor"]
+    Analyst["Analyst Agent<br/>(bespoke EDA)"]
+    Scientist["Scientist Agent<br/>(TabPFN)"]
+    Reporter["Reporter<br/>(PPTX + Markdown)"]
+
+    UI -- "CSV + prompt" --> Gateway
+    Gateway -- "initial state" --> Supervisor
+    Supervisor --> Analyst
+    Supervisor --> Scientist
+    Supervisor --> Reporter
+    Analyst -- "plots / summaries" --> Gateway
+    Scientist -- "model artefacts" --> Gateway
+    Reporter -- "slides / markdown" --> Gateway
+    Gateway -- "SSE stream" --> UI
+    Solo -. "LLM API" .-> Supervisor
 
 Supervisor — reasoning LLM deciding which agent acts next.
 
