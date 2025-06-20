@@ -1,119 +1,295 @@
-# Yudai V2 — **Lean MVP (4‑Week) Roadmap & PRD**
+Yudai V3 — Data‑Science Agent Backend (LangGraph Edition)
 
-> **Goal:** Ship a demo‑ready, fully‑local version of Yudai V2 that turns a **CSV + prompt** into a tested dbt model and an interactive dashboard rendered with **echarts‑for‑react**.
+> Status: Draft v2 (20 Jun 2025)
+This supersedes the Yudai V2 Python backend.  It preserves the existing bespoke EDA utilities and upgrades the ML pipeline to TabPFN, orchestrated by LangGraph.
+
+
+
 
 ---
 
-## 0 · Strategic Changes ("Ruthless Subtraction")
+0. High‑Level Architecture
 
-|✅ **Keep**|❌ **Cut**|➕ **Add**|
-|---|---|---|
-|Next.js + React frontend|Manual Python DAG logic|**dbt‑Core (+ DuckDB adapter)** as the single transformation layer|
-|`echarts-for-react` chart wrapper|Spark & BigQuery connectors|**Python Subprocess Orchestrator** 👉 executes dbt commands based on prompt|
-|Solo‑Server Docker for on‑board LLM|Streaming (Kafka/Kinesis)|**Dataset versioning** via dbt snapshots & hashed file paths|
-|Python EDA agents (Dask optional)|Slack / Monte‑Carlo observability|**/api/dashboards** endpoint that returns a JSON payload each chart slice consumes|
+┌────────────┐  (CSV + prompt)  ┌───────────────┐
+│   UI /     │ ───────────────▶ │ FastAPI Gate­│
+│ Next.js  ↔ │  SSE / files     │ way (backend) │
+├────────────┤                  └──────┬────────┘
+│  React +   │                         │
+│ echarts    │                         │ state
+└────────────┘                         ▼
+                             ┌──────────────────────┐
+                             │  LangGraph Workflow  │
+                             │  (LLM‑Supervisor)    │
+                             └──┬────────┬──────────┘
+                                │        │
+  ┌─────────────────────────────┘        └───────────────────────────────┐
+  ▼                                                                  ▼   ▼
+┌─────────────┐   EDA plots   ┌──────────────┐   TabPFN artefacts   ┌──────────────┐
+│  Analyst    │──────────────▶│  Scientist   │──────────────────────▶│  Reporter    │
+│ (bespoke)   │               │ (TabPFN)     │                       │ (pptx/MD)    │
+└─────────────┘               └──────────────┘                       └──────────────┘
 
-The result is a lighter stack that fits on a laptop yet proves the full prompt→pipeline→chart loop.
+Supervisor — reasoning LLM deciding which agent acts next.
 
----
+Analyst — wraps the existing Yudai bespoke‑EDA toolkit (histograms, correlation heat‑maps, feature inference, etc.).
 
-## 1 · One‑Month Roadmap (Week‑by‑Week)
+Scientist — trains a TabPFN foundation model for small‑data tabular prediction.
 
-|Week|Theme|Must‑Do Tasks|Deliverables|
-|---|---|---|---|
-|**W‑1**|**Repo Cleanup + Scaffold**|– Delete manual DAG code.– Add `dbt_project.yml` (duckdb profile).– Implement a Python script (`orchestrate_dbt.py`) that can execute `dbt seed → run → test` using subprocesses.– Ensure `echarts-for-react` + Tailwind compile.|Monorepo boots via `./dev_up.sh`; Python script successfully runs dbt commands; React page renders a static ECharts demo.|
-|**W‑2**|**Prompt→dbt Codegen**|– Extend Orchestrator agent: emits dbt model SQL + `tests.yml` + snapshot when user submits prompt.– Store files in `/models/generated/` and trigger the `orchestrate_dbt.py` script with necessary parameters.– Version incoming CSV with `<sha256>.csv`.|Prompt produces passing dbt tests; table appears in DuckDB; Python orchestration script runs successfully.|
-|**W‑3**|**API + Chart Generator**|– Define `/api/dashboards/:id` that returns `{ charts: [ { id, echartsOptions } ], data: {...} }`.– LLM agent also returns `EChartsOption` JSON per chart.– React `ChartCard` consumes options + slices data.– Add hook to refresh when dbt run (via Python script) completes.|Live dashboard on localhost after prompt with at least 3 chart types (bar, line, pie).|
-|**W‑4**|**Hardening & Pilot Demo**|– Add dbt snapshot tests for slowly‑changing dims.– CLI `yudai backfill` for historical re‑runs (utilizing the Python orchestrator).– Polish UX, write README install guide.– Collect feedback from 10 PMs.|Tag `v0.1.0‑mvp`; demo video + zip for testers.|
+Reporter — compiles insights + visual assets into PowerPoint and markdown.
 
----
 
-## 2 · Product Requirements Document (MVP)
-
-### 2.1 Problem Statement
-
-PMs need reliable metrics fast, without sending data to the cloud. Yudai V2 should let them ingest a CSV, type a question, and receive a tested dashboard — **entirely offline**.
-
-### 2.2 Success Metrics
-
-|Metric|Target|
-|---|---|
-|Prompt→dashboard success rate|≥ 80 %|
-|Cold install time|≤ 10 min|
-|Local inference only|0 external calls|
-|Pilot SUS score|≥ 75|
-
-### 2.3 In Scope
-
-- Solo‑Server LLM container
-    
-- Python-orchestrated dbt pipelines on DuckDB
-    
-- ECharts dashboards in React
-    
-- Single `/api/dashboards` JSON contract
-    
-- Data versioning via dbt snapshots
-    
-
-### 2.4 Out‑of‑Scope
-
-- Spark / BigQuery / Streaming connectors
-    
-- Monte‑Carlo, Slack alerts, Spark executor
-    
-- Multi‑tenant auth
-    
-
-### 2.5 Key User Stories
-
-1. **Upload & Ask** — PM uploads `sales.csv`, types “Show quarterly revenue & top‑5 products”. System builds dbt model + dashboard.
-    
-2. **Iterate** — PM edits prompt “Segment by region too”; only the transformed layer is rerun.
-    
-3. **Backfill** — PM runs `yudai backfill --id qtr_revenue --start 2022‑01‑01` to regenerate old metrics.
-    
-
-### 2.6 Functional Requirements
-
-- **FR‑1**: `docker compose up` starts Solo‑Server, DuckDB, Next.js (Python orchestrator will be part of the backend logic or a simple script).
-    
-- **FR‑2**: Orchestrator agent writes dbt SQL + tests to `models/generated`.
-    
-- **FR‑3**: Python orchestrator script executes `dbt seed|run|test` and sets status.
-    
-- **FR‑4**: `/api/dashboards/:id` returns chart options & data.
-    
-- **FR‑5**: React dashboard renders ≤ 3 s for ≤ 500 k rows.
-    
-
-### 2.7 Non‑Functional
-
-- Works on macOS ARM & Linux.
-    
-- All data stored in `~/yudai/data` with file hash directories.
-    
-
-### 2.8 Milestones
-
-|Day|Milestone|
-|---|---|
-|**0**|Kick‑off & repo cleanup|
-|**7**|Scaffold passes CI, ECharts demo up|
-|**14**|Prompt→dbt pipeline green|
-|**21**|API + dashboard live|
-|**28**|MVP release & pilot demo|
-
-### 2.9 Dependencies
-
-- `echarts-for-react` (MIT) – see docs: [https://github.com/hustcc/echarts-for-react](https://github.com/hustcc/echarts-for-react)
-    
-- `dbt-core`, `dbt-duckdb`
-    
 
 ---
 
+1. Dependencies & Environment
 
-    
+pip install \
+  langgraph \                    # state‑machine wrapper
+  langchain-core langchain-community \  # tool & message abstractions
+  langchain-openai \             # swap for solo-server in prod
+  tabpfn==0.1.9 \                # TabPFN + lightning
+  pytorch-lightning \            # training harness
+  python-pptx \                  # reporting
+  pandas matplotlib seaborn
 
-_Updated May 23 2025 — Pranay K._
+Environment Variables
+
+OPENAI_API_KEY=http://solo-server:11434/v1        # local LLM proxy
+REPORT_DIR=$WORKDIR/reports
+PLOTS_DIR=$WORKDIR/plots
+MODEL_DIR=$WORKDIR/models
+
+
+---
+
+2. Agent Implementations
+
+2·1 Supervisor (LLM Router)
+
+from langchain_openai import ChatOpenAI
+llm_router = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+@llm_node(max_rounds=10)
+async def supervisor(state: State) -> str:
+    """Select next agent.  State keys: df, plots, model_path, report_path."""
+    prompt = SUPERVISOR_PROMPT.render(state=state)
+    return (await llm_router.complete(prompt)).strip()
+
+Prompt lives in prompts/supervisor.jinja, containing few‑shot examples of state transitions.
+
+2·2 Analyst (Legacy + Tool Wrappers)
+
+The bespoke EDA code from Yudai V2 (folder yudai_backend/eda_tools/*.py) remains unchanged.  We simply expose each function with LangChain’s @tool decorator so the LLM can call them.
+
+from langchain.tools import tool
+from yudai_backend.eda_tools import (
+    describe_df,
+    plot_histogram,
+    correlation_heatmap,
+    smart_dtype_inference,
+)
+
+@tool("describe")
+def describe_tool(df):
+    """Return pandas describe() as markdown."""
+    return describe_df(df)
+
+@tool("histogram")
+def histogram_tool(df, col: str):
+    return plot_histogram(df, col, PLOTS_DIR)
+
+# heatmap & dtype tools registered similarly …
+
+analyst_node = ToolExecutor(tools=[describe_tool, histogram_tool, …])
+
+No code rewrite—just registration.
+
+2·3 Scientist (TabPFN)
+
+TabPFN is used for few‑shot tabular prediction.  It yields calibrated uncertainties, perfect for downstream analyst explanations.
+
+from tabpfn import TabPFNClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from joblib import dump
+
+@tool("tabpfn_train")
+def train_tabpfn(df: pd.DataFrame, target: str) -> Path:
+    X, y = df.drop(columns=[target]), df[target]
+
+    # Pipeline: scale → TabPFN
+    model = make_pipeline(StandardScaler(with_mean=False),
+                          TabPFNClassifier(num_mlp_layers=0))
+    model.fit(X.values, y.values)
+
+    artefact = MODEL_DIR / "tabpfn.joblib"
+    dump(model, artefact)
+    return artefact
+
+Advantages over legacy RandomForest:
+
+1. Zero hyper‑parameter tuning.
+
+
+2. Works on <10 k rows (Yudai use‑case).
+
+
+3. Built‑in uncertainty estimates for analyst narratives.
+
+
+
+Scientist node is a ToolExecutor exposing train_tabpfn and a predict_tabpfn tool for inference on new rows.
+
+2·4 Reporter
+
+Unchanged, except the narrative template now stitches in TabPFN confidence intervals.
+
+@tool("generate_report")
+def presentation(summary_md: str, images: list[Path], model_path: Path) -> Path:
+    # Read model metrics & craft narrative…
+    # (see full code in yudai_backend/report_tools/pptx_report.py)
+
+
+---
+
+3. LangGraph Assembly
+
+from langgraph.graph import StateGraph
+from typing import TypedDict, List, Optional
+
+class State(TypedDict):
+    df: pd.DataFrame
+    plots: List[Path]
+    model_path: Optional[Path]
+    report_path: Optional[Path]
+
+G = StateGraph(State)
+G.add_node("supervisor", supervisor)
+G.add_node("analyst", analyst_node)
+G.add_node("scientist", scientist_node)
+G.add_node("reporter", reporter_node)
+
+# Supervisor decides → we express conditional edges inside its prompt.
+G.add_edge("supervisor", "analyst")
+G.add_edge("supervisor", "scientist")
+G.add_edge("supervisor", "reporter")
+
+pipeline = G.compile()
+
+
+---
+
+4. API Contract
+
+POST /api/analysis
+
+Payload
+
+{
+  "file": <multipart CSV>,
+  "prompt": "Tell me why sales dipped in Q4 and build a model"
+}
+
+Streaming Response (SSE)
+
+{"event":"markdown","data":"### Data Summary …"}
+{"event":"image","data":"/plots/histogram_age.png"}
+{"event":"model","data":"/models/tabpfn.joblib"}
+{"event":"report","data":"/reports/analysis.pptx"}
+
+Front‑end renders markdown → ReactMarkdown, images → <img>, report → download link.
+
+
+---
+
+5. Migration Guide (V2 → V3)
+
+Legacy Module (V2)	Action in V3
+
+python_eda_agent.py	Keep — wrapped as Analyst tools.
+eda_utils/ matplotlib code	Keep — no refactor needed.
+model_trainer.py	Delete — replaced by TabPFN tools.
+ppt_generator.py	Keep, renamed report_tools/pptx_report.py.
+orchestrator.py	Delete — superseded by LangGraph.
+requirements.txt	Add tabpfn, langgraph, remove dask if unused
+
+
+Backend entrypoint changes from runner.py → main.py (FastAPI + LangGraph).
+
+
+---
+
+6. Docker / Compose
+
+Dockerfile
+
+FROM python:3.12-slim
+WORKDIR /app
+COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
+CMD ["uvicorn", "yudai_backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+docker‑compose.yml (LLM + backend)
+
+services:
+  solo-server:
+    image: volumes/soloserver:latest
+    ports: ["11434:11434"]
+
+  yudai-backend:
+    build: .
+    environment:
+      - OPENAI_API_KEY=http://solo-server:11434/v1
+    volumes:
+      - ./data:/app/data
+    ports: ["8000:8000"]
+
+
+---
+
+7. Extensibility Roadmap
+
+1. DSPy Prompt Compression — prune system prompts dynamically.
+
+
+2. Dashboard Node — server‑side export of echarts to SVG/PNG for high‑res slides.
+
+
+3. Auto‑Data Cleaning — integrate Great Expectations as a pre‑Analyst node.
+
+
+4. Chain of Verification — add Guardrails to validate Supervisor decisions.
+
+
+
+
+---
+
+8. Known Caveats
+
+TabPFN expects < 10 k rows; fallback to RandomForest for larger datasets (auto‑switch heuristic TBD).
+
+Supervisor’s reflection loop capped at 10 turns; enforce timeout.
+
+PPTX theming basic — branding tokens needed.
+
+
+
+---
+
+9. Developer Checklist
+
+[ ] Wrap all legacy EDA functions with @tool decorators.
+
+[ ] Write unit tests for TabPFN training (fixtures under tests/test_scientist.py).
+
+[ ] Update CI pipeline to build Docker and run LangGraph smoke test.
+
+[ ] Cut v3.0.0-alpha release and deploy to staging.
+
+
+
+---
+
+Generated by ChatGPT‑o3 · commit 6855d04
+
